@@ -1,0 +1,61 @@
+---
+title: "Stata testing"
+format: html
+---
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+# Statamarkdown: https://github.com/hemken/Statamarkdown
+# devtools::install_github("Hemken/Statamarkdown")
+library(Statamarkdown)
+library(pipr)
+library(dplyr)
+```
+## Outline
+
+1. Install pip in Stata
+2. Load PIP data
+
+
+## Install pip in Stata
+
+### Stable version
+```{stata}
+#| eval: false
+ssc install pip
+```
+
+### Development version
+```{stata}
+#| eval: false
+github install worldbank/pip
+```
+
+### Check version installed
+```{stata}
+#| eval: false
+which pip
+```
+
+## Load PIP data
+
+```{stata, collectcode=TRUE}
+#| echo: true
+#| code-fold: true
+pip, clear country(ETH) year(all) povline(2.15) 
+```
+
+
+```{r}
+#| echo: true
+#| code-fold: true
+get_stats(country = "ETH", year = "all", povline = 2.15)
+```
+
+
+## See header
+```{stata}
+#| echo: true
+#| code-fold: true
+list country_name country_code year welfare_time 
+```
+

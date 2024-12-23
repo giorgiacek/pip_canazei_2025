@@ -1,0 +1,40 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: Using Quarto for Stata dynamic documents\n",
+        "format: html\n",
+        "jupyter:\n",
+        "  kernelspec:\n",
+        "    display_name: Stata\n",
+        "    language: Stata\n",
+        "    name: stata\n",
+        "---"
+      ],
+      "id": "4ca3f66b"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "sysuse auto, clear\n",
+        "describe"
+      ],
+      "id": "3decf55d",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Stata",
+      "language": "Stata",
+      "name": "stata"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
