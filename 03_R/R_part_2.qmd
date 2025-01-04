@@ -1,0 +1,655 @@
+---
+title: "Accessing poverty and inequality data from the World Bank in R"
+subtitle: "Part 2"
+author: Giorgia Cecchinato, gcecchinato@worldbank.org
+format:
+  html:
+    toc: true
+    number-sections: true
+---
+
+**Set-up**
+
+```{r}
+#| echo: true
+#| output: false
+library(pipr)
+library(tidyverse)
+# library(joyn) # not necessary, but nice features, and developed by our own team!
+```
+
+# Introduction
+
+The **objectives** of this session are to:
+
+1.  Learn how PIP data are actually calculated by replicating them (Nigeria).
+
+-   **Replication of survey years** using percentiles and microdata.
+-   **Replication of reference years** (interpolation).
+-   Calculate the **international poverty line**.
+
+2.  Explore the data through some visualizations.
+
+-   Kuznets curve.
+-   COVID-19 impacts.
+
+# Replicate PIP Data for Nigeria (Survey Years)
+
+First we load the target values:
+
+```{r}
+nga_hc <- get_stats(country = "NGA") |>
+  select(country_code, year, headcount) |>
+  rename(hc_pip = headcount)
+
+nga_hc |>
+  str()
+```
+
+## Version 1: Using percentiles
+
+Microdata are not available for the public to download. They are only available for you to browse: [Microdata browsing](https://pip.worldbank.org/sol/sol-landing).
+
+Instead, we provide access to country-level percentile data for the survey years.
+
+How to access percentile data for the survey years:
+
+1.  Go to https://pip.worldbank.org/home
+
+2.  Go to Further Indicators & Data
+
+3.  Go to Percentiles ([Datacatalog Percentiles](https://datacatalog.worldbank.org/search/dataset/0063646))
+
+4.  Download percentile data expressed in 2017 PPP dollars for the survey years.
+
+```{r}
+world_100bin <- read_csv("/Users/giorgia/repos/pip_canazei_notes/material/world_100bin.csv")
+```
+
+```{r}
+nga_100bin <- world_100bin |>
+  filter(country_code == "NGA") |>
+  select(country_code, year, percentile, avg_welfare, pop_share) |>
+  arrange(year, percentile) |> # just to make sure
+  mutate(poor = avg_welfare < 2.15) |> # Deault poverty line is always 2.15
+  group_by(country_code, year) |>
+  summarize(hc_own = weighted.mean(poor, w = pop_share, na.rm = TRUE))
+```
+
+```{r}
+nga_100bin |>
+  dplyr::left_join(nga_hc, by = c("country_code", "year"))|>
+  mutate(d_hc = round(hc_pip/hc_own))
+```
+
+## Version 2: using actual microdata
+
+First, we need to get auxiliary data:
+
+```{r}
+# CPI
+cpi_tables <- get_aux("cpi") |>
+  rename(cpi = value) |>
+  select(country_code, year, cpi) |>
+  filter(country_code == "NGA", year == 2018)
+
+# PPP data
+ppp_tables <- get_aux("ppp") |>
+  rename(ppp = value) |>
+  select(country_code, year, ppp) |>
+  filter(country_code == "NGA", year == 2017)
+```
+
+Then, we load the microdata:
+
+```{r}
+library(haven)
+nga2018 <- read_dta("/Users/giorgia/repos/pip_canazei_notes/material/NGA2018.dta")
+nga2018 |>
+  head(n=5)
+```
+
+Merge with `cpi_tables` and `ppp_tables`:
+
+```{r}
+nga2018 <- nga2018 |>
+  dplyr::left_join(cpi_tables, by = c("country_code")) |>
+  dplyr::left_join(ppp_tables, by = c("country_code"))
+```
+
+```{r}
+nga2018_hc_own <- nga2018 |>
+  select(country_code, welfare, cpi, ppp, weight, year) |>
+  mutate(welf_ppp = welfare * (1/cpi) * (1/ppp) * (1/365)) |> # daily p.c. PPP terms
+  mutate(poor = welf_ppp <= 2.15) |>
+  group_by(country_code, year) |>
+  summarize(hc_own = weighted.mean(poor, w = weight))
+
+nga2018_hc_own
+```
+
+# Replicate PIP Data for Nigeria (Reference Years)
+
+In part 1 we looked at the difference between survey year estimates and reference year estimates, as well as the difference between `fill_gaps = TRUE` and `nowcast = TRUE`. Now, we are going to go through a replication of PIP data for reference years for Nigeria.
+
+To do so, we need to:
+
+1.  Get survey years estimates.
+
+2.  Calculate welfare means for reference years.
+
+3.  Calculate poverty headcount estimates based on welfare means for reference years.
+
+## Get survey years estimates
+
+Survey estimates are accessed as usual with `get_stats()`:
+
+```{r}
+nga_pip <- get_stats(country = "NGA", # note that we are not filling gaps
+                     reporting_level = "national") |>
+           select(country_code, wt = welfare_time, mean)
+
+head(nga_pip)
+```
+
+Note that welfare time is expressed in a decimal form, e.g. 2015.5 for a survey conducted in the middle of 2015.
+
+## Get interpolated means
+
+Welfare means are already calculated for us following the methodology described in the [PIP methodology handbook](https://datanalytics.worldbank.org/PIP-Methodology/lineupestimates.html#interpolations). We can access them using the function `get_aux("interpolated_means")`:
+
+```{r}
+means_table <- get_aux("interpolated_means") |>
+  select(country_code, year, welfare_time, welfare_type, survey_time, predicted_mean_ppp) |>
+  filter(country_code == "NGA")
+
+str(means_table)
+```
+
+## Calculate interpolated values
+
+Next, we need to calculate interpolated values.
+
+```{r}
+# First we merge the interpolated means with survey estimates
+merged_data <- means_table |>
+  dplyr::left_join(nga_pip, by = c("country_code", "welfare_time" = "wt"))
+
+merged_data |> head(n=5)
+```
+
+Then, we need to:
+
+1.  Scale the adjusted poverty line, using the ratio between the survey `mean` and the `predicted_mean_ppp` (instead of adjusting the whole distribution).
+2.  Calculate interpolation weights based on the distance between the `welfare_time` and the reference `year.`
+3.  Normalize the interpolation weights (calculate `interpolation_shr.`
+
+```{r}
+merged_data_step1 <- merged_data |> 
+  mutate(pl_to_query = 2.15 * mean / predicted_mean_ppp) |> 
+  filter(!is.na(pl_to_query)) 
+
+head(merged_data)
+```
+
+```{r}
+merged_data_step2 <- merged_data_step1 |> 
+  group_by(year) |>  
+  mutate(
+    interpol_wt = 1 / abs(welfare_time - year), # Raw weights based on distance
+    interpol_wtt = sum(interpol_wt, na.rm = TRUE), # Total weights within group
+    interpol_shr = interpol_wt / interpol_wtt, # Normalized weights
+    survey_year = floor(welfare_time) # Survey year as integer
+  ) |> 
+  ungroup() |> # Ungroup for further processing
+  arrange(country_code, year, welfare_time)
+
+head(merged_data_step2)
+```
+
+Finally we are ready for the poverty headcount estimation, which we'll do in two steps:
+
+First, we use `get_stats()` to calculate the new poverty headcount at each scaled poverty line (`pl_to_query`), and at each `survey_year.` For this exercise you can loop through the values, use `rowwise()` operations, or use `purrr` like we did here:
+
+```{r}
+
+merged_data_step3 <- merged_data_step2 |>
+  filter(year %in% 2015:2020)
+
+pl_queries <- merged_data_step3 |> 
+  mutate(
+    hc = purrr::map2_dbl(
+      .x = survey_year,
+      .y = pl_to_query,
+      ~ get_stats(
+        country = "NGA",
+        reporting_level = "national",
+        year = .x,
+        povline = .y
+      )$headcount[1]
+    )
+  )
+```
+
+```{r}
+pl_queries |> select(year, welfare_time, survey_year, pl_to_query, hc) |> str()
+```
+
+Then, we calculate the weighted average of those headcounts estimates `hc` based on the share of the time (`interpolated_shr`)
+
+```{r}
+nga_final_estimates <- pl_queries |>
+  group_by(year) |>
+  summarize(hc = weighted.mean(hc, interpol_shr, na.rm = TRUE)) |>
+  ungroup()
+
+str(nga_final_estimates)
+```
+
+And we check the results:
+
+```{r}
+nga_pip_fillgaps <- get_stats(country = "NGA", # note that we are not filling gaps
+                     reporting_level = "national") |>
+                    select(country_code, year, hc_target = headcount) # year is = reference year!
+  
+nga_final_estimates |>
+  dplyr::left_join(nga_pip_fillgaps, by=c('year'))|>
+  mutate(d_hc = hc_target/hc)|>
+  summary()
+
+
+```
+
+# Estimate Global and Regional Poverty
+
+In Part 1, we looked at the function `get_wb()`, which gives you access to regional and global estimates of poverty and inequality metrics.
+
+In this session, we will look at how exactly those numbers are calculated using country-level data and auxiliary tables (accessed with `get_aux()`).
+
+Before starting, let's have another look at the regional estimates available in PIP, and for which regions we need to calculate it:
+
+However, there is not a one-to-one correspondence between the regions in the regional estimates and the regions in the country-level data:
+
+```{r}
+pip_regional <- get_wb()
+
+pip_regional |>
+  distinct(region_code, region_name)
+```
+
+```{r}
+country_estimates <- get_stats(fill_gaps = TRUE)
+
+country_estimates |>
+  distinct(region_code, region_name)
+```
+
+We will need to calculate regional estimates for Eastern and Southern Africa (AFE) and Western and Central Africa (AFW) separately.
+
+## Get Population Data and Country Reference Table
+
+You can use the function `get_aux()` to access population data for each country in PIP. We only need national level estimates, so we filter the data accordingly (and we keep Argentina, which is calculated based on urban population).
+
+```{r}
+pop_tables <- 
+  get_aux("pop") |>
+  filter(data_level == "national" | country_code == "ARG") |>
+  rename(pop = value, reporting_level = data_level) |>
+  filter(year %in% c(1990:2022)) |>
+  mutate(year = as.numeric(as.character(year)))
+
+pop_tables
+```
+
+Data are now identified uniquely by `country_code`, `year`, and `data_level`.
+
+We get additional country-level reference table to match country codes with regions.
+
+```{r}
+country_tables <- get_aux("country_list") |>
+  select(region_code, region, country_code, country_name, 
+         africa_split, africa_split_code) |>
+  rename(region_name = region)
+
+country_tables |> 
+  filter(region_code == "SSA")
+```
+
+## Obtain reference-year poverty estimates and Merge
+
+We then get country-level estimates at the national level for the poverty headcount ratio:
+
+```{r}
+country_estimates <- country_estimates |>
+  select(country_code, year, reporting_level, headcount) |>
+  filter(reporting_level == "national" | country_code == "ARG") |>
+  filter(year %in% c(1990:2022)) |>
+  rename(hc = headcount)
+```
+
+And check that they are uniquely identified:
+
+```{r}
+library(joyn)
+
+joyn::is_id(country_estimates, c('country_code', 'year'))
+```
+
+We then merge them to population and country reference tables:
+
+```{r}
+country_estimates <- country_estimates |>
+  dplyr::left_join(pop_tables, by = c("country_code", "year", "reporting_level")) |>
+  dplyr::left_join(country_tables, by = "country_code") |>
+  arrange(country_code, year, reporting_level)
+```
+
+## Get Africa Split Codes for AFW and AFE and Append
+
+We want to calculate regional estimates for Eastern and Southern Africa (AFE) and Western and Central Africa (AFW) separately. To do so, we can use the `africa_split_code` variable:
+
+```{r}
+subreg <- country_estimates |>
+  filter(africa_split_code %in% c("AFW", "AFE")) |>
+  mutate(region_code = africa_split_code, # Here we substitute the region_code with the respective africa_split_code.
+         subregion = 1, 
+         region_name = africa_split_code)
+
+subreg |> head(n=5)
+```
+
+```{r}
+country_estimates_complete <- country_estimates |>
+  bind_rows(subreg)
+
+# Note correspondeces now:
+country_estimates_complete |> 
+  select(region_code, africa_split, africa_split_code) |>
+  distinct()
+```
+
+## Calculate Global Poverty Estimates
+
+```{r}
+global_poverty <- country_estimates_complete %>%
+  filter(subregion != 1) %>% # Removes duplicates of African countries used for subr-egional estimates
+  group_by(year) %>%
+  summarize(hc = weighted.mean(hc, pop, na.rm = TRUE), 
+            pop = sum(pop, na.rm = TRUE),
+            region_code = "WLD",
+            region_name = "World")
+```
+
+```{r}
+regional_poverty <- country_estimates_complete %>%
+  group_by(region_code, region_name, year) %>%
+  summarize(hc = weighted.mean(hc, pop, na.rm = TRUE), 
+            pop = sum(pop, na.rm = TRUE))
+```
+
+```{r}
+regional_estimates <- bind_rows(regional_poverty, global_poverty) |> rename(hc_own = hc)
+```
+
+## Compare with already calculated regional aggregates
+
+```{r}
+regional_comparison <- pip_regional |>
+  select(region_code, year, hc = headcount) |>
+  filter(year >= 1990) |>
+  full_join(regional_estimates, by = c("region_code", "year"))|>
+  mutate(d_hc = hc/hc_own)
+```
+
+```{r}
+mean_d_hc <- mean(regional_comparison$d_hc, na.rm = TRUE)
+if (round(mean_d_hc) != 1) {
+  warning("The mean of d_hc is not approximately 1. Check the merge.")
+} # We're okay!
+```
+
+# Calculate the international poverty line
+
+The IPL is now derived as the median of the national poverty lines of 28 of the world’s poorest countries, expressed in 2017 PPPs. For convenience, we will make use of an already generated dataset containing headcount ratios for this set of countries. More on the international poverty line (theory and Q&A): [Factseet on Adjustment to the Poverty Line](https://www.worldbank.org/en/news/factsheet/2022/05/02/fact-sheet-an-adjustment-to-global-poverty-lines#9).
+
+## Load Data and query PIP
+
+First we load the headcount ratios for the 28 countries:
+
+```{r}
+npl_data <- read_stata("/Users/giorgia/repos/pip_canazei_notes/material/national_poverty_rates_lic.dta")
+```
+
+Next we query PIP to derive the poverty line at a given headcount. To do so, we need to use the argument `popshare`, and loop through (or use `{purrr}` for vectorized loops) each country and headcount ratio:
+
+```{r}
+harmonized_npl <- npl_data |> 
+  mutate(
+    pip_data = map2(
+      .x = country_code, 
+      .y = headcount_nat, 
+      .f = ~ get_stats(
+      country = .x, 
+      year = "all", 
+      popshare = .y
+    ))
+  )
+```
+
+```{r}
+harmonized_npl_unnested <- harmonized_npl |>
+  select(country_code, year, pip_data) |>
+  # Unnest the fetched data
+  unnest(pip_data, names_sep = ".")
+
+harmonized_npl_unnested |> head(n=5)
+```
+
+```{r}
+harmonized_npl_unnested <-
+harmonized_npl_unnested |>
+  # Filter and prepare final dataset
+  filter(pip_data.year == year, 
+         pip_data.welfare_type == "consumption") |>
+  select(
+    country_code, pip_data.region_code, pip_data.year, pip_data.welfare_time, pip_data.headcount, 
+    pip_data.poverty_line, pip_data.reporting_level, pip_data.welfare_type
+  ) |> 
+  rename(harm_npl = pip_data.poverty_line) |> 
+  mutate(harm_npl = as.numeric(harm_npl))
+
+harmonized_npl_unnested
+```
+
+## Calculate the International Poverty Line (IPL)
+
+```{r}
+ipl <- harmonized_npl_unnested |> 
+  summarize(ipl = median(harm_npl, na.rm = TRUE)) |> 
+  pull(ipl)
+
+
+```
+
+## Visualize Harmonized Poverty Lines by Region
+
+```{r}
+#| fig-height: 6
+ggplot(harmonized_npl_unnested, 
+       aes(x = reorder(pip_data.region_code, harm_npl), y = harm_npl, fill = pip_data.region_code)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+  geom_jitter(color = "darkblue", size = 1, width = 0.2, alpha = 0.7) +
+  geom_hline(aes(yintercept = ipl), colour = "red") +
+  labs(
+    title = "Harmonized National Poverty Lines by Region",
+    subtitle = paste("Median IPL:", round(ipl, 2), "2017 PPP dollars"),
+    x = "Region",
+    y = "Harmonized National Poverty Line (PPP $)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5)
+  )
+```
+
+# Exercise 1: Kuznets Curve
+
+We can now move on to more interactive exercises which use PIP data. First, we are going to explore the Kuznets curve hypothesis. The Kuznets curve hypothesis posits that inequality first increases and then decreases as a country develops. The hypothesis is often represented by an **inverted U-shaped curve**.
+
+To do so, we(you) need to:
+
+1.  Plot the relationship between an inequality metric and log mean welfare.
+
+2.  Test the relationship by regressing an inequality metric on a 2nd order polynomial of log mean welfare.
+
+## Scatterplot
+
+Unfold the code to reveal the answer:
+
+```{r}
+#| code-fold: true
+#| message: false
+#| warning: false
+
+# Load PIP data
+pip_data <- get_stats()
+  # filter(welfare_type == "consumption", reporting_level == "national") Does it hold for different types of data?
+
+# Plot 
+scatterplot <- ggplot(pip_data, aes(x = log(mean), y = gini)) +
+  geom_point(color = "darkblue", alpha = 0.6) +  
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = TRUE, color = "red", fill = "pink", alpha = 0.3) +
+  labs(
+    title = "Exploring the Kuznets Curve Hypothesis",
+    subtitle = "Relationship between inequality (Gini) and log welfare",
+    x = "Log of Mean Welfare",
+    y = "Gini Coefficient"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5)
+  )
+
+scatterplot
+```
+
+## Regression Check
+
+Unfold the code to see the answer:
+
+```{r}
+#| code-fold: true
+# Regression check
+model <- lm(gini ~ log(mean)^2 + I(log(mean)^2), data = pip_data)
+summary(model)
+```
+
+## Conclusion
+
+1.  **Scatterplot:**
+    -   Plots the Gini coefficient (inequality) against the log of mean welfare.
+    -   Includes a **trendline** modeled using a quadratic regression to check for the inverted U-shape.
+2.  **Regression Analysis:**
+    -   Regresses **Gini** on a 2nd-order polynomial of **log(mean)**: \$$Gini = \beta_0 + \beta_1 \cdot \log(mean) + \beta_2 \cdot \log(mean)^2 + \epsilon$\$
+    -   The **summary** output will show:
+        -   Whether the quadratic term ($\beta_2$) is significant.
+        -   If ($\beta_2 < 0$), it supports the Kuznets hypothesis (inverted U-shape).
+3.  However: when filtering to consumption/income data only, things are more complex.
+
+```{r}
+#| code-fold: true
+scatterplot + facet_wrap(~welfare_type)
+```
+
+# Exercise 2: COVID-19 Impact on poverty and inequality
+
+For this exercise you will need to:
+
+1.  Calculate and plot the change in millions of extreme poor by region from 2019 to 2020.
+
+2.  Calculate and plot the changes in Gini observed from 2019 to 2020 for countries with comparable data during these two years.
+
+## Change in Millions of Extreme Poor
+
+First, load, the data at the regional level (`get_wb()`) and generate the metric needed (change in poverty, in millions). Unfold the code to see the answer:
+
+```{r}
+#| code-fold: true
+#| echo: false
+# Load World Bank data for 2019 and 2020
+wb_data <- get_wb() |> 
+  filter(year == 2019 | year == 2020) |> # Select data for 2019 and 2020
+  group_by(region_code) |> # Group by region
+  arrange(region_code, year) |> # Ensure data is sorted by region and year
+  mutate(changeinpoor = pop_in_poverty - lag(pop_in_poverty)) |> # Calculate change
+  filter(!is.na(changeinpoor)) # Remove rows without change data
+```
+
+Next, plot the data. Again, unfold the code to see the answer:
+
+```{r}
+#| code-fold: true
+#| fig-height: 6
+# Plot change in number of poor (in millions) by region
+poverty_plot <- ggplot(wb_data, aes(x = region_name, y = changeinpoor / 10^6, fill = region_name)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Change in Extreme Poverty (2019–2020)",
+    subtitle = "Change in the number of extreme poor (millions) by region",
+    x = "Region",
+    y = "Change in Millions"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+poverty_plot
+```
+
+## Change in Gini Coefficient
+
+First, download the data at the country level `get_stats()` and generate the needed metrics (change in Gini). Unfold the code to see the answer:
+
+```{r}
+#| code-fold: true
+#| message: false
+#| warning: false
+
+# Load data for Gini index
+df_gini <- get_stats() |> 
+  filter((year == 2019 | year == 2020) & reporting_level == "national") |> # Select years and national data
+  group_by(country_code, welfare_type, comparable_spell) |> # Group by country and welfare type
+  filter(n() == 2) |> # Keep only countries with data in both years
+  arrange(country_code, year) |> # Ensure sorted order
+  mutate(ginichange = gini - lag(gini)) |> # Calculate change in Gini
+  filter(year == 2020) # Keep only 2020 data for plotting
+```
+
+Next, plot the data. Unfold the code to see the answer:
+
+```{r}
+#| code-fold: true
+#| fig-height: 10
+# Plot change in Gini index by country
+gini_plot <- ggplot(df_gini, aes(x = reorder(country_name, + ginichange), y = ginichange * 100, fill = region_name)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Change in Gini Index (2019–2020)",
+    subtitle = "Change in inequality (Gini points) for countries with comparable data",
+    x = "Country",
+    y = "Change in Gini Points"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+
+gini_plot
+```

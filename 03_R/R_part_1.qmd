@@ -1,0 +1,378 @@
+---
+title: "Accessing poverty and inequality data from the World Bank in R"
+subtitle: "Part 1"
+author: Giorgia Cecchinato, gcecchinato@worldbank.org
+format:
+  html:
+    toc: true
+    number-sections: true
+---
+
+**Set-up**
+
+```{r}
+#| echo: true
+#| output: false
+library(pipr)
+library(tidyverse)
+```
+
+# Introduction
+
+## The Poverty and Inequality Platform (PIP)
+
+-   The World Bank helps low- and middle-income countries reduce poverty and produce data on poverty and inequality.
+
+-   This gives the World Bank a unique access to poverty data.
+
+-   Partly for that reason, the World Bank is the custodian of Sustainable Development Goals on ending poverty (SDG1) and reducing inequality (SDG10).
+
+-   All this data is stored in the Poverty and Inequality Platform (PIP) at [pip.worldbank.org](https://pip.worldbank.org).
+
+-   `{pipr}` ([link to repo](https://github.com/worldbank/pipr)) is a package which allows you to access the latest PIP data. It is basically an interface to the PIP API ([link to API UI](https://pip.worldbank.org/api)).
+
+## Plan
+
+-   **Part 1**: overview of `{pipr}`, functions, arguments, output.
+
+    -   **Part 1.1**: core function: `get_stats().`
+
+    -   **Part 1.2**: advanced arguments: `fillgaps`, `nowcast`, `popshare`, `comparable_spell`.
+
+    -   **Part 1.3**: regional data estimates: `get_wb()`.
+
+    -   **Part 1.4**: group data function: `get_gd().`
+
+-   **Part 2**: data replication and exercises/visualizations.
+
+# Accessing PIP in R
+
+## Install PIP
+
+`{pipr}` has not been released in CRAN yet, so to access it you need to use another package, `{devtools}`, so you can install it directly from the github repository:
+
+```{r}
+#| eval: false
+install.packages("devtools") # Install devtools
+library(devtools) # Load devtools
+
+devtools::install_github("worldbank/pipr") # Install pipr
+library(pipr) # Load pipr
+```
+
+## Additional Packages
+
+To run the code for this workshop you should also install some additional packages that help with data cleaning and visualization:
+
+```{r}
+#| eval: false
+install.packages("dplyr", "purrr", "ggplot2") # Install dplyr (or tidyverse, if you have it)
+library(dplyr)
+library(ggplot2)
+library(purrr)
+```
+
+# Country-level estimates
+
+The core function of `pipr` is `get_stats()`, which retrieves **country-level estimates** of poverty and inequality metrics:
+
+```{r}
+get_stats() |>
+  head(n=5)
+```
+
+```{r}
+# Nicer to look at:
+get_stats() |>
+  head(n=5) |>
+  DT::datatable(options = list(scrollX = TRUE))
+```
+
+-   Each row identfies a unique combination of
+    -   country_code: ISO 3 code.
+    -   year: `all` for all years, or numeric.
+    -   reporting_level: national, urban, rural.
+    -   welfare_type: income, consumption.
+
+## Variables
+
+There are a number of available variables:
+
+```{r}
+colnames(get_stats()) # variables available
+```
+
+And you can access info about those variables here:
+
+```{r}
+get_aux("dictionary") |>
+  head(n=5)
+# get_dictionary() # equivalent
+```
+
+## Auxiliary Data
+
+`get_aux()` allows you to access to alist of auxiliary data and tables.
+
+For instance, you can access GDP data used in the calculations:
+
+```{r}
+get_aux("gdp") |>
+  filter(value > 0) |> # First line is a row of NAs...
+  head(n=5)
+```
+
+Or access a series of info about how the data is calculated. An interesting one is `get_incgrp_coverage`:
+
+```{r}
+get_aux("incgrp_coverage") |>
+  head(n=5)
+```
+
+## Core estimates
+
+We can have a closer look at the core estimates for a Country, e.g. Nigeria:
+
+```{r}
+get_stats(country = "NGA") |> 
+  select(c(country_code, year, poverty_line, headcount, mean, gini))
+```
+
+Note that the default poverty line is \$2.15 (per capita, per day), in 2017 PPP-adjusted dollars, and the mean is expressed in the same way.
+
+Obviously, you can request a different poverty line:
+
+```{r}
+get_stats(country = "NGA",
+          povline = 1.9) |> 
+  select(c(country_code, year, poverty_line, headcount))
+```
+
+You can loop the request to get multiple poverty lines, this is just one way to do it, using `map_dfr()` from the `{purr}` package:
+
+```{r}
+povlines <- c(1.9, 2.15, 3.2, 5.5)
+NGA_estimates <- map_dfr(
+  .x = povlines, 
+  .f = ~get_stats(country = "NGA", povline = .x)) |>
+  select(c(country_code, year, poverty_line, headcount, mean))
+
+NGA_estimates
+```
+
+So you can actually start working with these data:
+
+```{r}
+#| output: false
+# install.packages("plotly")
+library(plotly) # You don't really need to install this, but it's cool..
+```
+
+```{r}
+p <- NGA_estimates |> 
+  ggplot(aes(x = year, y = headcount, color = factor(poverty_line))) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Headcount Ratio by Poverty Line and Year, NGA",
+       x = "Poverty Line",
+       y = "Headcount Ratio",
+       color = "Year") +
+  theme_minimal()
+
+ggplotly(p)
+```
+
+You can also get multiple countries for a given year:
+
+```{r}
+get_stats(country = c("ITA","NGA"), year=2018) |> 
+  select(c(country_code, year, poverty_line, headcount, mean, gini))
+
+```
+
+# Advanced arguments
+
+## Fillgaps - Extrapolated and interpolated values
+
+Some countries do not have data for all years, and `pipr` defaults to showing only the estimates generated using the actual survey data available.
+
+However, we also calculated values for years where there is no data, using a combination of extrapolation and interpolation (we will see the theory behind that in part 2).
+
+You can use the `fillgaps` argument to get extrapolated and interpolated values:
+
+```{r}
+# Default
+get_stats(country = "ZAF")  |> 
+  filter(year>2010) |>
+  select(c(country_code, year, poverty_line, headcount))
+```
+
+```{r}
+# With estimates:
+ALB_estimates <- get_stats(country = "ALB", fill_gaps = TRUE)  |> 
+  filter(year>2005) |>
+  select(c(country_code, year, poverty_line, headcount, estimation_type, estimate_type))
+
+ALB_estimates
+```
+
+```{r}
+#| code-fold: true
+
+ggplot(data = ALB_estimates, 
+       aes(x = year, y = headcount, 
+           color = estimation_type, 
+           shape = estimate_type)) +
+  geom_point(size = 3) +
+  geom_line(aes(group = poverty_line)) +
+  labs(title = "Poverty Headcount by Estimation and Estimate Type, ALB",
+       x = "Year",
+       y = "Headcount Ratio",
+       color = "Estimation Type",
+       shape = "Estimate Type") +
+  theme_minimal()
+
+```
+
+## Nowcast - Projected values
+
+The `nowcast` argument allows you to get projected values for the most recent years. Note that `nowcast = TRUE` implies `fillgaps = TRUE`.
+
+```{r}
+# With estimates:
+ALB_estimates_now <- get_stats(country = "ALB", nowcast = TRUE)  |> 
+  filter(year>2005) |>
+  select(c(country_code, year, poverty_line, headcount, estimation_type, estimate_type))
+```
+
+```{r}
+#| code-fold: true
+
+ggplot(data = ALB_estimates_now, 
+       aes(x = year, y = headcount, 
+           color = estimation_type, 
+           shape = estimate_type)) +
+  geom_point(size = 3) +
+  geom_line(aes(group = poverty_line)) +
+  labs(title = "Poverty Headcount by Estimation and Estimate Type, ALB",
+       x = "Year",
+       y = "Headcount Ratio",
+       color = "Estimation Type",
+       shape = "Estimate Type") +
+  theme_minimal()
+```
+
+## Popshare - population share
+
+Instead of supplying a poverty line, you could also set the argument `popshare`, which returns a poverty line for a given population share (headcount).
+
+```{r}
+get_stats(country = "ALB", popshare = 0.10) |>
+  select(c(country_code, year, poverty_line, headcount))
+```
+
+## Comparability (Income vs Consumption)
+
+Metrics are calculated using either income or consumption data. The `comparable_spell` variable indicates whether the data is comparable across years (and countries). `welfare_type` helps you identify whether the data is based on income or consumption.
+
+```{r}
+CHN_estimates <- get_stats(country="CHN") |>
+filter(reporting_level=="national") |>
+select(year,headcount,comparable_spell,welfare_type)
+
+CHN_estimates
+```
+
+Note that if you add `fill_gaps` or `nowcast`, the `comparable_spell` variable will be set to `NA`, as they are technically not comparable.
+
+```{r}
+get_stats(country="CHN", nowcast = TRUE) |>
+    filter(reporting_level=="national") |>
+    select(country_code, year, headcount, comparable_spell, welfare_type, estimation_type, estimate_type) |>
+  head(n= 5)
+```
+
+# Global and Regional estimates
+
+The other core function is `get_wb()`. This function retrieves global and regional estimates. Each row identifies a region-year combination.
+
+```{r}
+get_wb() |>
+  head(n=5)
+```
+
+Which regions?
+
+```{r}
+get_aux("regions") |>
+  head(n=5)
+```
+
+We will learn how to calculate regional level estimates in Part 2.
+
+You can also get global estimates (`region_code = "WLD`):
+
+```{r}
+world <- get_wb() |>
+      filter(year >= 1990, region_code %in% c("WLD","EAP","SSA"))
+
+ggplot(world, aes(x = year,y = 100*headcount,color=region_code)) +
+  geom_line() +
+  labs(
+    title = "Global poverty, 1990-2022",
+    y = "Poverty rate (%)",
+    x = ""
+  )
+```
+
+# Group Data Functions
+
+For some countries or years, we only have access to group data. An example of group data is available for you in `{pipr}`:
+
+```{r}
+pipr::datt_rural |>
+  DT::datatable(options = list(scrollX = TRUE))
+```
+
+These data are from rural India in 1983 and are used in one of the core methodology paper (Datt, 1998). Data are grouped monthly per capita consumption expenditure bins.
+
+For this type of data, the function, `get_gd()` allows you to retrieve poverty metrics and/or the exact parameters used to calculate them.
+
+For the metrics, use the argument `estimate = "stats"` and provide the requested mean and poverty line:
+
+```{r}
+datt_mean <- 109.9 
+datt_povline <- 89
+```
+
+```{r}
+get_gd(
+  cum_welfare = datt_rural$L,
+  cum_population = datt_rural$p,
+  requested_mean = datt_mean,
+  povline = datt_povline,
+  estimate = "stats"
+)
+```
+
+For the Lorenz curve points, use the argument `estimate = "lorenz"` and the number of bins/data points:
+
+```{r}
+#| warnings: false
+get_gd(
+  cum_welfare = datt_rural$L,
+  cum_population = datt_rural$p,
+  estimate = "lorenz",
+  n_bins = 10
+)
+```
+
+For the exact parameters used to calculate the poverty metrics, use the argument `estimate = "params"`:
+
+```{r}
+get_gd(
+  cum_welfare = datt_rural$L,
+  cum_population = datt_rural$p,
+  estimate = "params"
+)
+```
