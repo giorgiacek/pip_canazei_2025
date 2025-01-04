@@ -2,3 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# Ignore /data folder (temp)
+/data/
+
+# Ignore /material folder (temp)
+/material/
