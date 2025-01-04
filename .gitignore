@@ -8,3 +8,6 @@
 
 # Ignore /material folder (temp)
 /material/
+
+# Ignore slides (temp)
+/01_slides/
