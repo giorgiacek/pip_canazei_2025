@@ -122,12 +122,14 @@ get_aux("gdp") |>
   head(n=5)
 ```
 
-Or access a series of info about how the data is calculated. An interesting one is `get_incgrp_coverage`:
+Or access a series of info about how the data is calculated. For example, `incgrp_coverage`:
 
 ```{r}
 get_aux("incgrp_coverage") |>
   head(n=5)
 ```
+
+Which returns a table of survey coverage for low and lower-middle income countries for any given year. This table shows how the coverage rule is applied: under this requirement, global poverty estimates are reported only if data are representative of at least 50 percent of the population in low-income and lower-middle-income countries.
 
 ## Core estimates
 
@@ -148,7 +150,7 @@ get_stats(country = "NGA",
   select(c(country_code, year, poverty_line, headcount))
 ```
 
-You can loop the request to get multiple poverty lines, this is just one way to do it, using `map_dfr()` from the `{purr}` package:
+You can loop the request to get multiple poverty lines, this is just one way to do it, using `map_dfr()` from the `{purrr}` package:
 
 ```{r}
 povlines <- c(1.9, 2.15, 3.2, 5.5)
@@ -196,13 +198,13 @@ get_stats(country = c("ITA","NGA"), year=2018) |>
 
 Some countries do not have data for all years, and `pipr` defaults to showing only the estimates generated using the actual survey data available.
 
-However, we also calculated values for years where there is no data, using a combination of extrapolation and interpolation (we will see the theory behind that in part 2).
+However, we also calculated values for years where there is no data, using a combination of extrapolation and interpolation (we will see the methodology behind that in part 2).
 
-You can use the `fillgaps` argument to get extrapolated and interpolated values:
+You can use the `fillgaps` argument to get extrapolated and interpolated values.
 
 ```{r}
 # Default
-get_stats(country = "ZAF")  |> 
+get_stats(country = "ALB")  |> 
   filter(year>2010) |>
   select(c(country_code, year, poverty_line, headcount))
 ```
@@ -273,24 +275,27 @@ get_stats(country = "ALB", popshare = 0.10) |>
 
 ## Comparability (Income vs Consumption)
 
-Metrics are calculated using either income or consumption data. The `comparable_spell` variable indicates whether the data is comparable across years (and countries). `welfare_type` helps you identify whether the data is based on income or consumption.
+Metrics are calculated using either income or consumption data. The `comparable_spell` variable indicates whether the data is comparable across years within a country. `welfare_type` helps you identify whether the data is based on income or consumption.
 
 ```{r}
 CHN_estimates <- get_stats(country="CHN") |>
 filter(reporting_level=="national") |>
-select(year,headcount,comparable_spell,welfare_type)
+select(year, headcount, comparable_spell, welfare_type)
 
 CHN_estimates
 ```
 
-Note that if you add `fill_gaps` or `nowcast`, the `comparable_spell` variable will be set to `NA`, as they are technically not comparable.
+Note that if you add `fill_gaps` or `nowcast`, the `comparable_spell` variable will be set to `NA`:
 
 ```{r}
 get_stats(country="CHN", nowcast = TRUE) |>
     filter(reporting_level=="national") |>
-    select(country_code, year, headcount, comparable_spell, welfare_type, estimation_type, estimate_type) |>
-  head(n= 5)
+    select(country_code, year, headcount, comparable_spell, welfare_type, 
+           estimation_type, estimate_type) |>
+  filter(year %in% 1987:1995)
 ```
+
+So do your hormework (check `welfare_type`) before using the data!
 
 # Global and Regional estimates
 
@@ -364,11 +369,31 @@ get_gd(
   cum_population = datt_rural$p,
   estimate = "lorenz",
   n_bins = 10
-)
+) |>
+  DT::datatable(options = list(scrollX = TRUE))
 ```
 
-For the exact parameters used to calculate the poverty metrics, use the argument `estimate = "params"`:
+```{r}
+#| code-fold: true
+lorenz_points_lq <- get_gd(datt_rural$L, datt_rural$p, estimate = "lorenz", lorenz = "lq")
+lorenz_points_lq_10 <- get_gd(datt_rural$L, datt_rural$p, estimate = "lorenz", lorenz = "lq", n_bins = 10)
 
+ggplot() +
+  geom_bar(data = lorenz_points_lq_10, aes(x = weight, y = welfare), stat = "identity", fill = "darkorange", alpha = 0.3) +
+  geom_point(data = datt_rural, aes(x = p, y = L), color = "darkorange", size = 2) +
+  geom_point(data = lorenz_points_lq, aes(x = weight, y = welfare), color = "darkorange", size = 0.5) +
+  geom_abline(intercept = 0, slope = 1, color = "black") +
+  labs(
+    title = "Lorenz Curve for Rural India, 1983",
+    x = "Cumulative Share of Population",
+    y = "Cumulative Share of Welfare"
+  ) +
+  theme_minimal()
+```
+
+
+
+For the exact parameters used to calculate the poverty metrics, use the argument `estimate = "params"`:
 ```{r}
 get_gd(
   cum_welfare = datt_rural$L,
