@@ -15,6 +15,7 @@ format:
 #| output: false
 library(pipr)
 library(tidyverse)
+library(here)
 # library(joyn) # not necessary, but nice features, and developed by our own team!
 ```
 
@@ -24,7 +25,7 @@ The **objectives** of this session are to:
 
 1.  Learn how PIP data are actually calculated by replicating them (Nigeria).
 
--   **Replication of survey years** using percentiles and microdata.
+-   **Replication of survey years** using percentiles (and microdata, but data not available for you to use).
 -   **Replication of reference years** (interpolation).
 -   Calculate the **international poverty line**.
 
@@ -32,6 +33,7 @@ The **objectives** of this session are to:
 
 -   Kuznets curve.
 -   COVID-19 impacts.
+-   PL vs SPL
 
 # Replicate PIP Data for Nigeria (Survey Years)
 
@@ -63,7 +65,7 @@ How to access percentile data for the survey years:
 4.  Download percentile data expressed in 2017 PPP dollars for the survey years.
 
 ```{r}
-world_100bin <- read_csv("/Users/giorgia/repos/pip_canazei_notes/material/world_100bin.csv")
+world_100bin <- read_csv(here("02_data","world_100bin.csv"))
 ```
 
 ```{r}
@@ -104,7 +106,7 @@ Then, we load the microdata:
 
 ```{r}
 library(haven)
-nga2018 <- read_dta("/Users/giorgia/repos/pip_canazei_notes/material/NGA2018.dta")
+nga2018 <- read_dta(here("02_data", "NGA2018.dta")) # you do't have access to this file!
 nga2018 |>
   head(n=5)
 ```
@@ -398,7 +400,7 @@ regional_estimates <- bind_rows(regional_poverty, global_poverty) |> rename(hc_o
 regional_comparison <- pip_regional |>
   select(region_code, year, hc = headcount) |>
   filter(year >= 1990) |>
-  full_join(regional_estimates, by = c("region_code", "year"))|>
+  dplyr::full_join(regional_estimates, by = c("region_code", "year"))|>
   mutate(d_hc = hc/hc_own)
 ```
 
@@ -418,7 +420,7 @@ The IPL is now derived as the median of the national poverty lines of 28 of the 
 First we load the headcount ratios for the 28 countries:
 
 ```{r}
-npl_data <- read_stata("/Users/giorgia/repos/pip_canazei_notes/material/national_poverty_rates_lic.dta")
+npl_data <- read_stata(here("02_data", "national_poverty_rates_lic.dta"))
 ```
 
 Next we query PIP to derive the poverty line at a given headcount. To do so, we need to use the argument `popshare`, and loop through (or use `{purrr}` for vectorized loops) each country and headcount ratio:
@@ -653,3 +655,37 @@ gini_plot <- ggplot(df_gini, aes(x = reorder(country_name, + ginichange), y = gi
 
 gini_plot
 ```
+
+
+## Exercise 3: SPL vs PL
+
+Plot the different trends in headcount ratios when calculated based on the IPL vs the SPL for Italy (or another country of your choice):
+
+```{r}
+#| code-fold: true
+ITA_spl <- get_stats(country = "ITA")  |> 
+  filter(year>2005) |>
+  select(year, spl)
+
+
+ITA_spl_data <- map2_dfr(.x = ITA_spl$spl, 
+        .y = ITA_spl$year,
+        .f = ~ get_stats(country = "ITA", 
+                         povline = .x,
+                         year = .y)) |>
+  select(country_code, year, poverty_line, headcount)
+
+ITA_pl_data <- get_stats(country = "ITA") |>
+  select(year, poverty_line, headcount) |>
+  filter(year>2005)
+
+ggplot() +
+  geom_line(data = ITA_spl_data, aes(x = year, y = headcount), color = "blue") +
+  geom_line(data = ITA_pl_data, aes(x = year, y = headcount), color = "red") +
+  labs(title = "Headcount ratio SPL vs PL in Italy",
+       x = "Year",
+       y = "Headcount ratio") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
