@@ -11,5 +11,4 @@ Repository for the workshop *"How to Access and Use the World Bank's poverty and
 
 To be uploaded soon:
 - Slides
-- Data
 
