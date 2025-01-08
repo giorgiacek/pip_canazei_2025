@@ -129,15 +129,15 @@ get_aux("incgrp_coverage") |>
   head(n=5)
 ```
 
-Which returns a table of survey coverage for low and lower-middle income countries for any given year. This table shows how the coverage rule is applied: under this requirement, global poverty estimates are reported only if data are representative of at least 50 percent of the population in low-income and lower-middle-income countries.
+Which returns a table of survey coverage for low and lower-middle income countries for any given year. This table shows how the **coverage rule** is applied: under this requirement, global poverty estimates are reported only if data are representative of at least 50 percent of the population in low-income and lower-middle-income countries.
 
 ## Core estimates
 
-We can have a closer look at the core estimates for a Country, e.g. Nigeria:
+We can have a closer look at the core estimates for a country, e.g. Nigeria:
 
 ```{r}
 get_stats(country = "NGA") |> 
-  select(c(country_code, year, poverty_line, headcount, mean, gini))
+  select(country_code, year, poverty_line, headcount, mean, gini)
 ```
 
 Note that the default poverty line is \$2.15 (per capita, per day), in 2017 PPP-adjusted dollars, and the mean is expressed in the same way.
@@ -147,7 +147,7 @@ Obviously, you can request a different poverty line:
 ```{r}
 get_stats(country = "NGA",
           povline = 1.9) |> 
-  select(c(country_code, year, poverty_line, headcount))
+  select(country_code, year, poverty_line, headcount)
 ```
 
 You can loop the request to get multiple poverty lines, this is just one way to do it, using `map_dfr()` from the `{purrr}` package:
@@ -156,8 +156,8 @@ You can loop the request to get multiple poverty lines, this is just one way to 
 povlines <- c(1.9, 2.15, 3.2, 5.5)
 NGA_estimates <- map_dfr(
   .x = povlines, 
-  .f = ~get_stats(country = "NGA", povline = .x)) |>
-  select(c(country_code, year, poverty_line, headcount, mean))
+  .f = ~ get_stats(country = "NGA", povline = .x)) |>
+  select(country_code, year, poverty_line, headcount, mean)
 
 NGA_estimates
 ```
@@ -188,19 +188,19 @@ You can also get multiple countries for a given year:
 
 ```{r}
 get_stats(country = c("ITA","NGA"), year=2018) |> 
-  select(c(country_code, year, poverty_line, headcount, mean, gini))
+  select(country_code, year, poverty_line, headcount, mean, gini)
 
 ```
 
 # Advanced arguments
 
-## Fillgaps - Extrapolated and interpolated values
+## Fill_gaps - Extrapolated and interpolated values
 
 Some countries do not have data for all years, and `pipr` defaults to showing only the estimates generated using the actual survey data available.
 
 However, we also calculated values for years where there is no data, using a combination of extrapolation and interpolation (we will see the methodology behind that in part 2).
 
-You can use the `fillgaps` argument to get extrapolated and interpolated values.
+You can use the `fill_gaps` argument to get extrapolated and interpolated values.
 
 ```{r}
 # Default
@@ -238,13 +238,13 @@ ggplot(data = ALB_estimates,
 
 ## Nowcast - Projected values
 
-The `nowcast` argument allows you to get projected values for the most recent years. Note that `nowcast = TRUE` implies `fillgaps = TRUE`.
+The `nowcast` argument allows you to get projected values for the most recent years. Note that `nowcast = TRUE` implies `fill_gaps = TRUE`.
 
 ```{r}
 # With estimates:
 ALB_estimates_now <- get_stats(country = "ALB", nowcast = TRUE)  |> 
   filter(year>2005) |>
-  select(c(country_code, year, poverty_line, headcount, estimation_type, estimate_type))
+  select(country_code, year, poverty_line, headcount, estimation_type, estimate_type)
 ```
 
 ```{r}
@@ -266,7 +266,7 @@ ggplot(data = ALB_estimates_now,
 
 ## Popshare - population share
 
-Instead of supplying a poverty line, you could also set the argument `popshare`, which returns a poverty line for a given population share (headcount).
+Instead of supplying a poverty line, you could also set the argument `popshare`, which returns a poverty line for a given population share (poverty headcount).
 
 ```{r}
 get_stats(country = "ALB", popshare = 0.10) |>
@@ -330,23 +330,29 @@ ggplot(world, aes(x = year,y = 100*headcount,color=region_code)) +
   )
 ```
 
+```{r}
+get_wb() |>
+      filter(year >= 1990, region_code %in% c("WLD"))
+```
+
+
 # Group Data Functions
 
-For some countries or years, we only have access to group data. An example of group data is available for you in `{pipr}`:
+For some countries or years (e.g. Algeria, China, Guyana, Turkmenistan, Trinidad & Tobago, Venezuela, and the United Arab Emirates0, we only have access to group data. An example of group data is available for you in `{pipr}`:
 
 ```{r}
 pipr::datt_rural |>
   DT::datatable(options = list(scrollX = TRUE))
 ```
 
-These data are from rural India in 1983 and are used in one of the core methodology paper (Datt, 1998). Data are grouped monthly per capita consumption expenditure bins.
+These data are from rural India in 1983 and are used in one of the core methodology paper ([Datt, 1998](https://ebrary.ifpri.org/utils/getfile/collection/p15738coll2/id/125673/filename/125704.pdf)). Data are grouped monthly per capita consumption expenditure bins.
 
 For this type of data, the function, `get_gd()` allows you to retrieve poverty metrics and/or the exact parameters used to calculate them.
 
 For the metrics, use the argument `estimate = "stats"` and provide the requested mean and poverty line:
 
 ```{r}
-datt_mean <- 109.9 
+datt_mean <- 109.9 # Rupee
 datt_povline <- 89
 ```
 
@@ -391,9 +397,8 @@ ggplot() +
   theme_minimal()
 ```
 
-
-
 For the exact parameters used to calculate the poverty metrics, use the argument `estimate = "params"`:
+
 ```{r}
 get_gd(
   cum_welfare = datt_rural$L,
@@ -401,3 +406,9 @@ get_gd(
   estimate = "params"
 )
 ```
+
+Parameters are reported for either the Lorenz quadratic `lq` or the Lorenz Beta `lb`. Both methods are described in [Datt (1998)](https://ebrary.ifpri.org/utils/getfile/collection/p15738coll2/id/125673/filename/125704.pdf) and in the [methodological handbook](https://datanalytics.worldbank.org/PIP-Methodology/welfareaggregate.html#tgd). When estimating the final values for a given country, the better fit between Beta ad Quadratic is chosen, the code with all the steps is available [here](https://github.com/PIP-Technical-Team/wbpip/blob/0cf9aa7bc168400ecf78ae5455f4c4247b841e9d/R/gd_select_lorenz.R#L143-L175). In general:
+
+-   The **Beta Curve** is more flexible and works well for **highly unequal distributions**, while the **Lorenz Quadratic Curve** is simpler but less adaptable.
+
+-   Both methods rely on **numerical optimization** to estimate parameters that **minimize errors** between the observed and predicted values.
