@@ -3,8 +3,8 @@
 .RData
 .Ruserdata
 
-# Ignore /data folder (temp)
-/02_data/
+# Ignore NGA file folder (temp)
+NGA2018.dta
 
 # Ignore /material folder (temp)
 /material/
