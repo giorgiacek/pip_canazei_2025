@@ -42,17 +42,17 @@ First we load the target values:
 ```{r}
 nga_hc <- get_stats(country = "NGA") |>
   select(country_code, year, headcount) |>
-  rename(hc_pip = headcount)
+  rename(hc_pip = headcount) # year = survey_year in this case
 
 nga_hc |>
-  str()
+  DT::datatable(options = list(scrollX = TRUE))
 ```
 
 ## Version 1: Using percentiles
 
 Microdata are not available for the public to download. They are only available for you to browse: [Microdata browsing](https://pip.worldbank.org/sol/sol-landing).
 
-Instead, we provide access to country-level percentile data for the survey years.
+Instead, we provide access to **country-level percentile data (100)** for the survey years.
 
 How to access percentile data for the survey years:
 
@@ -66,6 +66,12 @@ How to access percentile data for the survey years:
 
 ```{r}
 world_100bin <- read_csv(here("02_data","world_100bin.csv"))
+world_100bin |>
+  filter(country_code == "NGA", year == 2000) |>
+  select(country_code, year, welfare_type, percentile, avg_welfare, 
+         welfare_share, quantile, pop_share) |>
+  mutate(across(is.numeric), ~ round(., digits = 3)) |>
+  DT::datatable(options = list(scrollX = TRUE))
 ```
 
 ```{r}
