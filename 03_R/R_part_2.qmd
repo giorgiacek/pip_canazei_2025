@@ -67,10 +67,11 @@ How to access percentile data for the survey years:
 ```{r}
 world_100bin <- read_csv(here("02_data","world_100bin.csv"))
 world_100bin |>
-  filter(country_code == "NGA", year == 2000) |>
+  filter(country_code == "NGA", year == 2018) |>
   select(country_code, year, welfare_type, percentile, avg_welfare, 
          welfare_share, quantile, pop_share) |>
-  mutate(across(is.numeric), ~ round(., digits = 3)) |>
+  filter(percentile %in% c(0, 1, 2, 3, 4, 5, 10, 40, 90, 100)) |>
+  mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
   DT::datatable(options = list(scrollX = TRUE))
 ```
 
@@ -79,62 +80,79 @@ nga_100bin <- world_100bin |>
   filter(country_code == "NGA") |>
   select(country_code, year, percentile, avg_welfare, pop_share) |>
   arrange(year, percentile) |> # just to make sure
-  mutate(poor = avg_welfare < 2.15) |> # Deault poverty line is always 2.15
+  mutate(poor = avg_welfare < 2.15) |> # select individuals falling under default poverty line (y < z)
   group_by(country_code, year) |>
   summarize(hc_own = weighted.mean(poor, w = pop_share, na.rm = TRUE))
+
+nga_100bin |>
+  mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
+  DT::datatable(options = list(scrollX = TRUE))
 ```
+
 
 ```{r}
 nga_100bin |>
   dplyr::left_join(nga_hc, by = c("country_code", "year"))|>
-  mutate(d_hc = round(hc_pip/hc_own))
+  mutate(d_hc = round(hc_pip/hc_own)) |>
+  mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
+  DT::datatable(options = list(scrollX = TRUE))
 ```
 
-## Version 2: using actual microdata
 
-First, we need to get auxiliary data:
+## Version 2: using actual microdata
+First, we need to get auxiliary data for **CPI** and **PPPs**:
 
 ```{r}
 # CPI
-cpi_tables <- get_aux("cpi") |>
+cpi_table <- get_aux("cpi") |>
   rename(cpi = value) |>
   select(country_code, year, cpi) |>
   filter(country_code == "NGA", year == 2018)
 
 # PPP data
-ppp_tables <- get_aux("ppp") |>
+ppp_table <- get_aux("ppp") |>
   rename(ppp = value) |>
   select(country_code, year, ppp) |>
   filter(country_code == "NGA", year == 2017)
 ```
 
-Then, we load the microdata:
+Then, we load the microdata (which you do not have access to!):
 
 ```{r}
 library(haven)
-nga2018 <- read_dta(here("02_data", "NGA2018.dta")) # you do't have access to this file!
+nga2018 <- read_dta(here("02_data", "NGA2018.dta")) # you don't have access to this file!
 nga2018 |>
-  head(n=5)
+  select(country_code, year, hhid, welfare, weight) |>
+  mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
+  head(n = 10) |>
+  DT::datatable(options = list(scrollX = TRUE))
 ```
 
-Merge with `cpi_tables` and `ppp_tables`:
+Merge with `cpi_table` and `ppp_table`:
 
 ```{r}
 nga2018 <- nga2018 |>
-  dplyr::left_join(cpi_tables, by = c("country_code")) |>
-  dplyr::left_join(ppp_tables, by = c("country_code"))
+  dplyr::left_join(cpi_table, by = c("country_code")) |>
+  dplyr::left_join(ppp_table, by = c("country_code")) |>
+  select(-year, year = year.x, country_code, welfare, cpi, ppp, weight)
 ```
 
 ```{r}
 nga2018_hc_own <- nga2018 |>
   select(country_code, welfare, cpi, ppp, weight, year) |>
-  mutate(welf_ppp = welfare * (1/cpi) * (1/ppp) * (1/365)) |> # daily p.c. PPP terms
-  mutate(poor = welf_ppp <= 2.15) |>
+  mutate(welfare_ppp = welfare * (1/cpi) * (1/ppp) * (1/365)) |> # daily p.c. PPP terms
+  mutate(poor = welfare_ppp < 2.15) |>
   group_by(country_code, year) |>
-  summarize(hc_own = weighted.mean(poor, w = weight))
+  summarize(hc_own = weighted.mean(poor, w = weight)) 
 
 nga2018_hc_own
 ```
+
+```{r}
+nga_hc |>
+  dplyr::filter(year == 2018)
+```
+
 
 # Replicate PIP Data for Nigeria (Reference Years)
 
@@ -155,50 +173,100 @@ Survey estimates are accessed as usual with `get_stats()`:
 ```{r}
 nga_pip <- get_stats(country = "NGA", # note that we are not filling gaps
                      reporting_level = "national") |>
-           select(country_code, wt = welfare_time, mean)
+           select(country_code, welfare_time, mean)
 
 head(nga_pip)
 ```
 
-Note that welfare time is expressed in a decimal form, e.g. 2015.5 for a survey conducted in the middle of 2015.
+Note that this time we need `welfare_time` rather than year. `welfare_time` reports the correct timing of the survey and it is expressed in a decimal form, e.g. 2015.5 for a survey conducted in the middle of 2015.
 
 ## Get interpolated means
 
-Welfare means are already calculated for us following the methodology described in the [PIP methodology handbook](https://datanalytics.worldbank.org/PIP-Methodology/lineupestimates.html#interpolations). We can access them using the function `get_aux("interpolated_means")`:
+Welfare means are already calculated for us following the methodology described in the [PIP methodology handbook](https://datanalytics.worldbank.org/PIP-Methodology/lineupestimates.html#interpolations) and source code is available in the [repository](https://github.com/PIP-Technical-Team/wbpip/blob/PROD/R/predict_request_year_mean.R) of the `{wbpip}` package.
 
+A brief overview:
+
+### Extrapolations
+$$
+f\left(y_{\text {reference }}\right)=\frac{N A_{\text {reference }}}{N A_{\text {survey }}} \times f\left(y_{\text {survey }}\right)
+$$
+where $NA$ is GDP per capita. So estimated means are just scaled survey means based on the ratio of GDP p.c. We apply a *pass-through* methodology for:
+- **India**: only 0.7 of growth in GDP will be passed to welfare in urban areas and 0.55 in rural areas.
+- **Years between 2015-2018**: 0.7 of growth in GDP will be passed to welfare.
+
+### Interpolations
+Depends on whether:
+
+$$
+\operatorname{sign}\left(\frac{\mu_{\text {survey } 2}}{\mu_{\text {survey } 1}}-1\right)=\operatorname{sign}\left(\frac{N A_{\text {survey } 2}}{N A_{\text {reference }}}-1\right)=\operatorname{sign}\left(\frac{N A_{\text {reference }}}{N A_{\text {survey } 1}}-1\right)
+$$
+is true.
+
+Easier in code terms:
+```{r}
+#| eval: false
+is_same_direction <- function(x, y) {
+  (x[2] - x[1]) * (y[2] - y[1]) > 0
+}
+# with x = c(mu_survey1, mu_survey2) and y = c(NA_survey1, NA_survey2)
+```
+
+
+If so, we apply same direction, otherwise, diverging direction interpolation:
+
+- **Same direction** : we extrapolate means like so:
+
+$$
+\mu_{\text {reference }}=\left(\mu_{\text {survey } 2}-\mu_{\text {survey } 1}\right) \times \frac{N A_{\text {reference }}-N A_{\text {survey } 1}}{N A_{\text {survey } 2}-N A_{\text {survey } 1}}+\mu_{\text {survey } 1}
+$$
+
+- **Diverging direction** : means are extrapolated forward by the national account growth rate using the early survey and backwards using the later survey.
+
+
+We can access them using the function `get_aux("interpolated_means")`:
 ```{r}
 means_table <- get_aux("interpolated_means") |>
   select(country_code, year, welfare_time, welfare_type, survey_time, predicted_mean_ppp) |>
   filter(country_code == "NGA")
+```
 
-str(means_table)
+```{r}
+means_table |>
+  head(n=5) |>
+  mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
+  DT::datatable(options = list(scrollX = TRUE))
 ```
 
 ## Calculate interpolated values
 
-Next, we need to calculate interpolated values.
-
+Next, we need to calculate interpolated values for poverty estimates:
 ```{r}
 # First we merge the interpolated means with survey estimates
 merged_data <- means_table |>
-  dplyr::left_join(nga_pip, by = c("country_code", "welfare_time" = "wt"))
-
-merged_data |> head(n=5)
+  dplyr::left_join(nga_pip, by = c("country_code", "welfare_time"))
 ```
 
 Then, we need to:
 
 1.  Scale the adjusted poverty line, using the ratio between the survey `mean` and the `predicted_mean_ppp` (instead of adjusting the whole distribution).
 2.  Calculate interpolation weights based on the distance between the `welfare_time` and the reference `year.`
-3.  Normalize the interpolation weights (calculate `interpolation_shr.`
+3.  Normalize the interpolation weights (calculate `interpolation_shr.`)
 
 ```{r}
 merged_data_step1 <- merged_data |> 
-  mutate(pl_to_query = 2.15 * mean / predicted_mean_ppp) |> 
+  mutate(pl_to_query = 2.15 * mean / predicted_mean_ppp) |> # scaled poverty line
   filter(!is.na(pl_to_query)) 
-
-head(merged_data)
 ```
+
+```{r}
+#| code-fold: true
+merged_data_step1 |>
+  select(year, welfare_time, mean, predicted_mean_ppp, pl_to_query) |>
+  head(n = 10) |>
+  mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
+  DT::datatable(options = list(scrollX = TRUE))
+```
+
 
 ```{r}
 merged_data_step2 <- merged_data_step1 |> 
@@ -211,21 +279,27 @@ merged_data_step2 <- merged_data_step1 |>
   ) |> 
   ungroup() |> # Ungroup for further processing
   arrange(country_code, year, welfare_time)
+```
 
-head(merged_data_step2)
+```{r}
+merged_data_step2 |>
+  select(year, welfare_time, survey_year, mean, predicted_mean_ppp, pl_to_query, interpol_wt, interpol_wtt, interpol_shr) |>
+  head(n= 10) |>
+  mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
+  DT::datatable(options = list(scrollX = TRUE))
 ```
 
 Finally we are ready for the poverty headcount estimation, which we'll do in two steps:
 
-First, we use `get_stats()` to calculate the new poverty headcount at each scaled poverty line (`pl_to_query`), and at each `survey_year.` For this exercise you can loop through the values, use `rowwise()` operations, or use `purrr` like we did here:
+First, we use `get_stats()` to calculate the new poverty headcount at each scaled poverty line (`pl_to_query`), and at each `survey_year.` For this exercise you can loop through the values, use `rowwise()` operations, or use `{purrr}` like we did here:
 
 ```{r}
 
 merged_data_step3 <- merged_data_step2 |>
-  filter(year %in% 2015:2020)
+  filter(year %in% 2015:2020) # restricted to some years to reduce computational time
 
 pl_queries <- merged_data_step3 |> 
-  mutate(
+  mutate( # note I am running this within a mutate function so for each hc estimate I run the get_stats function for a given year and a given (adjusted) poverty line
     hc = purrr::map2_dbl(
       .x = survey_year,
       .y = pl_to_query,
@@ -240,7 +314,10 @@ pl_queries <- merged_data_step3 |>
 ```
 
 ```{r}
-pl_queries |> select(year, welfare_time, survey_year, pl_to_query, hc) |> str()
+pl_queries |> 
+  select(year, welfare_time, survey_year, pl_to_query, hc) |>
+  mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
+  DT::datatable(options = list(scrollX = TRUE))
 ```
 
 Then, we calculate the weighted average of those headcounts estimates `hc` based on the share of the time (`interpolated_shr`)
@@ -265,8 +342,6 @@ nga_final_estimates |>
   dplyr::left_join(nga_pip_fillgaps, by=c('year'))|>
   mutate(d_hc = hc_target/hc)|>
   summary()
-
-
 ```
 
 # Estimate Global and Regional Poverty
@@ -275,9 +350,7 @@ In Part 1, we looked at the function `get_wb()`, which gives you access to regio
 
 In this session, we will look at how exactly those numbers are calculated using country-level data and auxiliary tables (accessed with `get_aux()`).
 
-Before starting, let's have another look at the regional estimates available in PIP, and for which regions we need to calculate it:
-
-However, there is not a one-to-one correspondence between the regions in the regional estimates and the regions in the country-level data:
+First, note that there is not a one-to-one correspondence between the regions in the regional estimates and the regions in the country-level data:
 
 ```{r}
 pip_regional <- get_wb()
@@ -310,7 +383,7 @@ pop_tables <-
 pop_tables
 ```
 
-Data are now identified uniquely by `country_code`, `year`, and `data_level`.
+Data are now identified uniquely by `country_code`, `year`, and `reporting_level`.
 
 We get additional country-level reference table to match country codes with regions.
 
@@ -339,13 +412,12 @@ country_estimates <- country_estimates |>
 And check that they are uniquely identified:
 
 ```{r}
-library(joyn)
+library(joyn) # This is a package developed by my team!
 
 joyn::is_id(country_estimates, c('country_code', 'year'))
 ```
 
 We then merge them to population and country reference tables:
-
 ```{r}
 country_estimates <- country_estimates |>
   dplyr::left_join(pop_tables, by = c("country_code", "year", "reporting_level")) |>
@@ -401,7 +473,6 @@ regional_estimates <- bind_rows(regional_poverty, global_poverty) |> rename(hc_o
 ```
 
 ## Compare with already calculated regional aggregates
-
 ```{r}
 regional_comparison <- pip_regional |>
   select(region_code, year, hc = headcount) |>
@@ -419,12 +490,18 @@ if (round(mean_d_hc) != 1) {
 
 # Calculate the international poverty line
 
-The IPL is now derived as the median of the national poverty lines of 28 of the world’s poorest countries, expressed in 2017 PPPs. For convenience, we will make use of an already generated dataset containing headcount ratios for this set of countries. More on the international poverty line (theory and Q&A): [Factseet on Adjustment to the Poverty Line](https://www.worldbank.org/en/news/factsheet/2022/05/02/fact-sheet-an-adjustment-to-global-poverty-lines#9).
+The IPL is now derived as the median of the national poverty lines of 28 of the world’s poorest countries, expressed in 2017 PPPs. For convenience, we will make use of an already generated dataset containing headcount ratios for this set of countries. More on the international poverty line (theory and Q&A): [Factseet on Adjustment to the Poverty Line](https://www.worldbank.org/en/news/factsheet/2022/05/02/fact-sheet-an-adjustment-to-global-poverty-lines#9). Note that you can retrieve the poverty lines also with:
+
+```{r}
+#| eval: false
+get_aux("national_poverty_lines")
+```
+
+But you need to filter them accordingly.
 
 ## Load Data and query PIP
 
 First we load the headcount ratios for the 28 countries:
-
 ```{r}
 npl_data <- read_stata(here("02_data", "national_poverty_rates_lic.dta"))
 ```
@@ -476,8 +553,6 @@ harmonized_npl_unnested
 ipl <- harmonized_npl_unnested |> 
   summarize(ipl = median(harm_npl, na.rm = TRUE)) |> 
   pull(ipl)
-
-
 ```
 
 ## Visualize Harmonized Poverty Lines by Region
@@ -504,7 +579,7 @@ ggplot(harmonized_npl_unnested,
 
 # Exercise 1: Kuznets Curve
 
-We can now move on to more interactive exercises which use PIP data. First, we are going to explore the Kuznets curve hypothesis. The Kuznets curve hypothesis posits that inequality first increases and then decreases as a country develops. The hypothesis is often represented by an **inverted U-shaped curve**.
+Here are some more interactive exercises which use PIP data. First, we are going to explore the Kuznets curve hypothesis. The Kuznets curve hypothesis posits that inequality first increases and then decreases as a country develops. The hypothesis is often represented by an **inverted U-shaped curve**.
 
 To do so, we(you) need to:
 
@@ -663,32 +738,38 @@ gini_plot
 ```
 
 
-## Exercise 3: SPL vs PL
+# Exercise 3: SPL vs PL
 
-Plot the different trends in headcount ratios when calculated based on the IPL vs the SPL for Italy (or another country of your choice):
+Plot the different trends in headcount ratios when calculated based on the IPL vs the SPL for Italy (or another country of your choice). Hint: `get_stats()` will give you the data you need (`spl` variable).
 
 ```{r}
 #| code-fold: true
-ITA_spl <- get_stats(country = "ITA")  |> 
-  filter(year>2005) |>
+country_chosen <- "ITA"
+
+country_spl <- get_stats(country = country_chosen)  |> 
+  #filter(year>2005) |>
   select(year, spl)
 
 
-ITA_spl_data <- map2_dfr(.x = ITA_spl$spl, 
-        .y = ITA_spl$year,
-        .f = ~ get_stats(country = "ITA", 
+country_spl_data <- map2_dfr(.x = country_spl$spl, 
+        .y = country_spl$year,
+        .f = ~ get_stats(country = country_chosen, 
                          povline = .x,
                          year = .y)) |>
   select(country_code, year, poverty_line, headcount)
 
-ITA_pl_data <- get_stats(country = "ITA") |>
-  select(year, poverty_line, headcount) |>
-  filter(year>2005)
+country_pl_data <- get_stats(country = country_chosen) |>
+  select(year, poverty_line, headcount)
+  #filter(year>2005)
+```
 
+```{r}
 ggplot() +
-  geom_line(data = ITA_spl_data, aes(x = year, y = headcount), color = "blue") +
-  geom_line(data = ITA_pl_data, aes(x = year, y = headcount), color = "red") +
-  labs(title = "Headcount ratio SPL vs PL in Italy",
+  geom_point(data = country_spl_data, aes(x = year, y = headcount), color = "blue") +
+  geom_line(data = country_spl_data, aes(x = year, y = headcount), color = "blue") +
+  geom_point(data = country_pl_data, aes(x = year, y = headcount), color = "red") +
+  geom_line(data = country_pl_data, aes(x = year, y = headcount), color = "red") +
+  labs(title = paste("Headcount ratio SPL vs PL in", country_chosen),
        x = "Year",
        y = "Headcount ratio") +
   theme_minimal() +

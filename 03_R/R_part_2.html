@@ -68,6 +68,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="R_part_2_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="R_part_2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="R_part_2_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<link href="R_part_2_files/libs/htmltools-fill-0.5.8.1/fill.css" rel="stylesheet">
+<script src="R_part_2_files/libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<link href="R_part_2_files/libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet">
+<script src="R_part_2_files/libs/datatables-binding-0.33/datatables.js"></script>
+<script src="R_part_2_files/libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<link href="R_part_2_files/libs/dt-core-1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
+<link href="R_part_2_files/libs/dt-core-1.13.6/css/jquery.dataTables.extra.css" rel="stylesheet">
+<script src="R_part_2_files/libs/dt-core-1.13.6/js/jquery.dataTables.min.js"></script>
+<link href="R_part_2_files/libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
+<script src="R_part_2_files/libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -118,7 +128,11 @@ window.Quarto = {
   <li><a href="#replicate-pip-data-for-nigeria-reference-years" id="toc-replicate-pip-data-for-nigeria-reference-years" class="nav-link" data-scroll-target="#replicate-pip-data-for-nigeria-reference-years"><span class="header-section-number">3</span> Replicate PIP Data for Nigeria (Reference Years)</a>
   <ul class="collapse">
   <li><a href="#get-survey-years-estimates" id="toc-get-survey-years-estimates" class="nav-link" data-scroll-target="#get-survey-years-estimates"><span class="header-section-number">3.1</span> Get survey years estimates</a></li>
-  <li><a href="#get-interpolated-means" id="toc-get-interpolated-means" class="nav-link" data-scroll-target="#get-interpolated-means"><span class="header-section-number">3.2</span> Get interpolated means</a></li>
+  <li><a href="#get-interpolated-means" id="toc-get-interpolated-means" class="nav-link" data-scroll-target="#get-interpolated-means"><span class="header-section-number">3.2</span> Get interpolated means</a>
+  <ul class="collapse">
+  <li><a href="#extrapolations" id="toc-extrapolations" class="nav-link" data-scroll-target="#extrapolations"><span class="header-section-number">3.2.1</span> Extrapolations</a></li>
+  <li><a href="#interpolations" id="toc-interpolations" class="nav-link" data-scroll-target="#interpolations"><span class="header-section-number">3.2.2</span> Interpolations</a></li>
+  </ul></li>
   <li><a href="#calculate-interpolated-values" id="toc-calculate-interpolated-values" class="nav-link" data-scroll-target="#calculate-interpolated-values"><span class="header-section-number">3.3</span> Calculate interpolated values</a></li>
   </ul></li>
   <li><a href="#estimate-global-and-regional-poverty" id="toc-estimate-global-and-regional-poverty" class="nav-link" data-scroll-target="#estimate-global-and-regional-poverty"><span class="header-section-number">4</span> Estimate Global and Regional Poverty</a>
@@ -145,8 +159,8 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#change-in-millions-of-extreme-poor" id="toc-change-in-millions-of-extreme-poor" class="nav-link" data-scroll-target="#change-in-millions-of-extreme-poor"><span class="header-section-number">7.1</span> Change in Millions of Extreme Poor</a></li>
   <li><a href="#change-in-gini-coefficient" id="toc-change-in-gini-coefficient" class="nav-link" data-scroll-target="#change-in-gini-coefficient"><span class="header-section-number">7.2</span> Change in Gini Coefficient</a></li>
-  <li><a href="#exercise-3-spl-vs-pl" id="toc-exercise-3-spl-vs-pl" class="nav-link" data-scroll-target="#exercise-3-spl-vs-pl"><span class="header-section-number">7.3</span> Exercise 3: SPL vs PL</a></li>
   </ul></li>
+  <li><a href="#exercise-3-spl-vs-pl" id="toc-exercise-3-spl-vs-pl" class="nav-link" data-scroll-target="#exercise-3-spl-vs-pl"><span class="header-section-number">8</span> Exercise 3: SPL vs PL</a></li>
   </ul>
 </nav>
 </div>
@@ -211,23 +225,21 @@ window.Quarto = {
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>nga_hc <span class="ot">&lt;-</span> <span class="fu">get_stats</span>(<span class="at">country =</span> <span class="st">"NGA"</span>) <span class="sc">|&gt;</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, headcount) <span class="sc">|&gt;</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">hc_pip =</span> headcount)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">hc_pip =</span> headcount) <span class="co"># year = survey_year in this case</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Pruning cache</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>nga_hc <span class="sc">|&gt;</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">str</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>tibble [8 × 3] (S3: tbl_df/tbl/data.frame)
- $ country_code: chr [1:8] "NGA" "NGA" "NGA" "NGA" ...
- $ year        : num [1:8] 1985 1992 1996 2003 2010 ...
- $ hc_pip      : num [1:8] 0.478 0.524 0.584 0.479 0.349 ...</code></pre>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-2e5f54f2ef57688ccc91" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-2e5f54f2ef57688ccc91">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8"],["NGA","NGA","NGA","NGA","NGA","NGA","NGA","NGA"],[1985,1992,1996,2003,2010,2012,2015,2018],[0.47822,0.523538750882,0.584195147915,0.478789246345,0.348853281055,0.338289211486,0.32256629699,0.308632983511]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>country_code<\/th>\n      <th>year<\/th>\n      <th>hc_pip<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[2,3]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"country_code","targets":1},{"name":"year","targets":2},{"name":"hc_pip","targets":3}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <section id="version-1-using-percentiles" class="level2" data-number="2.1">
 <h2 data-number="2.1" class="anchored" data-anchor-id="version-1-using-percentiles"><span class="header-section-number">2.1</span> Version 1: Using percentiles</h2>
 <p>Microdata are not available for the public to download. They are only available for you to browse: <a href="https://pip.worldbank.org/sol/sol-landing">Microdata browsing</a>.</p>
-<p>Instead, we provide access to country-level percentile data for the survey years.</p>
+<p>Instead, we provide access to <strong>country-level percentile data (100)</strong> for the survey years.</p>
 <p>How to access percentile data for the survey years:</p>
 <ol type="1">
 <li><p>Go to https://pip.worldbank.org/home</p></li>
@@ -236,7 +248,7 @@ window.Quarto = {
 <li><p>Download percentile data expressed in 2017 PPP dollars for the survey years.</p></li>
 </ol>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>world_100bin <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">"02_data"</span>,<span class="st">"world_100bin.csv"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>world_100bin <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">"02_data"</span>,<span class="st">"world_100bin.csv"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Rows: 245592 Columns: 10
 ── Column specification ────────────────────────────────────────────────────────
@@ -247,99 +259,115 @@ dbl (7): year, percentile, avg_welfare, pop_share, welfare_share, quantile, pop
 ℹ Use `spec()` to retrieve the full column specification for this data.
 ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>world_100bin <span class="sc">|&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(country_code <span class="sc">==</span> <span class="st">"NGA"</span>, year <span class="sc">==</span> <span class="dv">2018</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, welfare_type, percentile, avg_welfare, </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>         welfare_share, quantile, pop_share) <span class="sc">|&gt;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(percentile <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">40</span>, <span class="dv">90</span>, <span class="dv">100</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(., <span class="at">digits =</span> <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-b2faa4928a2810bc4627" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-b2faa4928a2810bc4627">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9"],["NGA","NGA","NGA","NGA","NGA","NGA","NGA","NGA","NGA"],[2018,2018,2018,2018,2018,2018,2018,2018,2018],["consumption","consumption","consumption","consumption","consumption","consumption","consumption","consumption","consumption"],[1,2,3,4,5,10,40,90,100],[0.603,0.824,0.925,1.001,1.067,1.317,2.496,6.506,19.392],[0.002,0.002,0.003,0.003,0.003,0.004,0.007,0.018,0.053],[0.76,0.879,0.967,1.036,1.098,1.336,2.515,6.635,null],[0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>country_code<\/th>\n      <th>year<\/th>\n      <th>welfare_type<\/th>\n      <th>percentile<\/th>\n      <th>avg_welfare<\/th>\n      <th>welfare_share<\/th>\n      <th>quantile<\/th>\n      <th>pop_share<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[2,4,5,6,7,8]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"country_code","targets":1},{"name":"year","targets":2},{"name":"welfare_type","targets":3},{"name":"percentile","targets":4},{"name":"avg_welfare","targets":5},{"name":"welfare_share","targets":6},{"name":"quantile","targets":7},{"name":"pop_share","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+</div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>nga_100bin <span class="ot">&lt;-</span> world_100bin <span class="sc">|&gt;</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(country_code <span class="sc">==</span> <span class="st">"NGA"</span>) <span class="sc">|&gt;</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, percentile, avg_welfare, pop_share) <span class="sc">|&gt;</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(year, percentile) <span class="sc">|&gt;</span> <span class="co"># just to make sure</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">poor =</span> avg_welfare <span class="sc">&lt;</span> <span class="fl">2.15</span>) <span class="sc">|&gt;</span> <span class="co"># Deault poverty line is always 2.15</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">poor =</span> avg_welfare <span class="sc">&lt;</span> <span class="fl">2.15</span>) <span class="sc">|&gt;</span> <span class="co"># select individuals falling under default poverty line (y &lt; z)</span></span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code, year) <span class="sc">|&gt;</span></span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">hc_own =</span> <span class="fu">weighted.mean</span>(poor, <span class="at">w =</span> pop_share, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`summarise()` has grouped output by 'country_code'. You can override using the
 `.groups` argument.</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>nga_100bin <span class="sc">|&gt;</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(., <span class="at">digits =</span> <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-2387555f9885e7bb9531" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-2387555f9885e7bb9531">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8"],["NGA","NGA","NGA","NGA","NGA","NGA","NGA","NGA"],[1985,1992,1996,2003,2010,2012,2015,2018],[0.48,0.52,0.58,0.48,0.35,0.34,0.32,0.31]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>country_code<\/th>\n      <th>year<\/th>\n      <th>hc_own<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[2,3]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"country_code","targets":1},{"name":"year","targets":2},{"name":"hc_own","targets":3}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+</div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>nga_100bin <span class="sc">|&gt;</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(nga_hc, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"country_code"</span>, <span class="st">"year"</span>))<span class="sc">|&gt;</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">d_hc =</span> <span class="fu">round</span>(hc_pip<span class="sc">/</span>hc_own))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 8 × 5
-# Groups:   country_code [1]
-  country_code  year hc_own hc_pip  d_hc
-  &lt;chr&gt;        &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
-1 NGA           1985  0.480  0.478     1
-2 NGA           1992  0.520  0.524     1
-3 NGA           1996  0.580  0.584     1
-4 NGA           2003  0.480  0.479     1
-5 NGA           2010  0.350  0.349     1
-6 NGA           2012  0.340  0.338     1
-7 NGA           2015  0.320  0.323     1
-8 NGA           2018  0.310  0.309     1</code></pre>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>nga_100bin <span class="sc">|&gt;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(nga_hc, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"country_code"</span>, <span class="st">"year"</span>))<span class="sc">|&gt;</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">d_hc =</span> <span class="fu">round</span>(hc_pip<span class="sc">/</span>hc_own)) <span class="sc">|&gt;</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(., <span class="at">digits =</span> <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-a8f7f143111d083c1967" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-a8f7f143111d083c1967">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8"],["NGA","NGA","NGA","NGA","NGA","NGA","NGA","NGA"],[1985,1992,1996,2003,2010,2012,2015,2018],[0.48,0.52,0.58,0.48,0.35,0.34,0.32,0.31],[0.478,0.524,0.584,0.479,0.349,0.338,0.323,0.309],[1,1,1,1,1,1,1,1]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>country_code<\/th>\n      <th>year<\/th>\n      <th>hc_own<\/th>\n      <th>hc_pip<\/th>\n      <th>d_hc<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"country_code","targets":1},{"name":"year","targets":2},{"name":"hc_own","targets":3},{"name":"hc_pip","targets":4},{"name":"d_hc","targets":5}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </section>
 <section id="version-2-using-actual-microdata" class="level2" data-number="2.2">
 <h2 data-number="2.2" class="anchored" data-anchor-id="version-2-using-actual-microdata"><span class="header-section-number">2.2</span> Version 2: using actual microdata</h2>
-<p>First, we need to get auxiliary data:</p>
+<p>First, we need to get auxiliary data for <strong>CPI</strong> and <strong>PPPs</strong>:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CPI</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>cpi_tables <span class="ot">&lt;-</span> <span class="fu">get_aux</span>(<span class="st">"cpi"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>cpi_table <span class="ot">&lt;-</span> <span class="fu">get_aux</span>(<span class="st">"cpi"</span>) <span class="sc">|&gt;</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">cpi =</span> value) <span class="sc">|&gt;</span></span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, cpi) <span class="sc">|&gt;</span></span>
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(country_code <span class="sc">==</span> <span class="st">"NGA"</span>, year <span class="sc">==</span> <span class="dv">2018</span>)</span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co"># PPP data</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>ppp_tables <span class="ot">&lt;-</span> <span class="fu">get_aux</span>(<span class="st">"ppp"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>ppp_table <span class="ot">&lt;-</span> <span class="fu">get_aux</span>(<span class="st">"ppp"</span>) <span class="sc">|&gt;</span></span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">ppp =</span> value) <span class="sc">|&gt;</span></span>
 <span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, ppp) <span class="sc">|&gt;</span></span>
 <span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(country_code <span class="sc">==</span> <span class="st">"NGA"</span>, year <span class="sc">==</span> <span class="dv">2017</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Then, we load the microdata:</p>
+<p>Then, we load the microdata (which you do not have access to!):</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(haven)</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>nga2018 <span class="ot">&lt;-</span> <span class="fu">read_dta</span>(<span class="fu">here</span>(<span class="st">"02_data"</span>, <span class="st">"NGA2018.dta"</span>)) <span class="co"># you do't have access to this file!</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>nga2018 <span class="ot">&lt;-</span> <span class="fu">read_dta</span>(<span class="fu">here</span>(<span class="st">"02_data"</span>, <span class="st">"NGA2018.dta"</span>)) <span class="co"># you don't have access to this file!</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>nga2018 <span class="sc">|&gt;</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="at">n=</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 5 × 13
-   year   hhid welfare weight urban     hsize country_code surveyid     rep_year
-  &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl+lbl&gt; &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;           &lt;dbl&gt;
-1  2018 101001 257791.  1799. 1 [Urban]     6 NGA          NGA_2018_LSS     2018
-2  2018 101001 257791.  1799. 1 [Urban]     6 NGA          NGA_2018_LSS     2018
-3  2018 101001 257791.  1799. 1 [Urban]     6 NGA          NGA_2018_LSS     2018
-4  2018 101001 257791.  1799. 1 [Urban]     6 NGA          NGA_2018_LSS     2018
-5  2018 101001 257791.  1799. 1 [Urban]     6 NGA          NGA_2018_LSS     2018
-# ℹ 4 more variables: ref_year &lt;dbl&gt;, svyyear &lt;dbl&gt;, reporting_level &lt;chr&gt;,
-#   welfare_type &lt;chr&gt;</code></pre>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, hhid, welfare, weight) <span class="sc">|&gt;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(., <span class="at">digits =</span> <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="at">n =</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-00e21a88ce06b8647e68" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-00e21a88ce06b8647e68">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10"],["NGA","NGA","NGA","NGA","NGA","NGA","NGA","NGA","NGA","NGA"],[2018,2018,2018,2018,2018,2018,2018,2018,2018,2018],[101001,101001,101001,101001,101001,101001,101002,101002,101002,101002],[257790.718,257790.718,257790.718,257790.718,257790.718,257790.718,382008.345,382008.345,382008.345,382008.345],[1799.404,1799.404,1799.404,1799.404,1799.404,1799.404,1799.404,1799.404,1799.404,1799.404]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>country_code<\/th>\n      <th>year<\/th>\n      <th>hhid<\/th>\n      <th>welfare<\/th>\n      <th>weight<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[2,3,4,5]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"country_code","targets":1},{"name":"year","targets":2},{"name":"hhid","targets":3},{"name":"welfare","targets":4},{"name":"weight","targets":5}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
-<p>Merge with <code>cpi_tables</code> and <code>ppp_tables</code>:</p>
+<p>Merge with <code>cpi_table</code> and <code>ppp_table</code>:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>nga2018 <span class="ot">&lt;-</span> nga2018 <span class="sc">|&gt;</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(cpi_tables, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"country_code"</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(ppp_tables, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"country_code"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>nga2018 <span class="ot">&lt;-</span> nga2018 <span class="sc">|&gt;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(cpi_table, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"country_code"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(ppp_table, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"country_code"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>year, <span class="at">year =</span> year.x, country_code, welfare, cpi, ppp, weight)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>nga2018_hc_own <span class="ot">&lt;-</span> nga2018 <span class="sc">|&gt;</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, welfare, cpi, ppp, weight, year) <span class="sc">|&gt;</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">welf_ppp =</span> welfare <span class="sc">*</span> (<span class="dv">1</span><span class="sc">/</span>cpi) <span class="sc">*</span> (<span class="dv">1</span><span class="sc">/</span>ppp) <span class="sc">*</span> (<span class="dv">1</span><span class="sc">/</span><span class="dv">365</span>)) <span class="sc">|&gt;</span> <span class="co"># daily p.c. PPP terms</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">poor =</span> welf_ppp <span class="sc">&lt;=</span> <span class="fl">2.15</span>) <span class="sc">|&gt;</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code, year) <span class="sc">|&gt;</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">hc_own =</span> <span class="fu">weighted.mean</span>(poor, <span class="at">w =</span> weight))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>nga2018_hc_own <span class="ot">&lt;-</span> nga2018 <span class="sc">|&gt;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, welfare, cpi, ppp, weight, year) <span class="sc">|&gt;</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">welfare_ppp =</span> welfare <span class="sc">*</span> (<span class="dv">1</span><span class="sc">/</span>cpi) <span class="sc">*</span> (<span class="dv">1</span><span class="sc">/</span>ppp) <span class="sc">*</span> (<span class="dv">1</span><span class="sc">/</span><span class="dv">365</span>)) <span class="sc">|&gt;</span> <span class="co"># daily p.c. PPP terms</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">poor =</span> welfare_ppp <span class="sc">&lt;</span> <span class="fl">2.15</span>) <span class="sc">|&gt;</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code, year) <span class="sc">|&gt;</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">hc_own =</span> <span class="fu">weighted.mean</span>(poor, <span class="at">w =</span> weight)) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`summarise()` has grouped output by 'country_code'. You can override using the
 `.groups` argument.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>nga2018_hc_own</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>nga2018_hc_own</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 1 × 3
 # Groups:   country_code [1]
-  country_code year  hc_own
-  &lt;chr&gt;        &lt;fct&gt;  &lt;dbl&gt;
-1 NGA          2017   0.309</code></pre>
+  country_code  year hc_own
+  &lt;chr&gt;        &lt;dbl&gt;  &lt;dbl&gt;
+1 NGA           2018  0.309</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>nga_hc <span class="sc">|&gt;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(year <span class="sc">==</span> <span class="dv">2018</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  country_code  year hc_pip
+  &lt;chr&gt;        &lt;dbl&gt;  &lt;dbl&gt;
+1 NGA           2018  0.309</code></pre>
 </div>
 </div>
 </section>
@@ -357,147 +385,160 @@ dbl (7): year, percentile, avg_welfare, pop_share, welfare_share, quantile, pop
 <h2 data-number="3.1" class="anchored" data-anchor-id="get-survey-years-estimates"><span class="header-section-number">3.1</span> Get survey years estimates</h2>
 <p>Survey estimates are accessed as usual with <code>get_stats()</code>:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>nga_pip <span class="ot">&lt;-</span> <span class="fu">get_stats</span>(<span class="at">country =</span> <span class="st">"NGA"</span>, <span class="co"># note that we are not filling gaps</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">reporting_level =</span> <span class="st">"national"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>           <span class="fu">select</span>(country_code, <span class="at">wt =</span> welfare_time, mean)</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(nga_pip)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>nga_pip <span class="ot">&lt;-</span> <span class="fu">get_stats</span>(<span class="at">country =</span> <span class="st">"NGA"</span>, <span class="co"># note that we are not filling gaps</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">reporting_level =</span> <span class="st">"national"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>           <span class="fu">select</span>(country_code, welfare_time, mean)</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(nga_pip)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 6 × 3
-  country_code    wt  mean
-  &lt;chr&gt;        &lt;dbl&gt; &lt;dbl&gt;
-1 NGA          1985.  2.90
-2 NGA          1992   2.86
-3 NGA          1996.  2.92
-4 NGA          2004.  2.92
-5 NGA          2010.  3.50
-6 NGA          2012.  3.55</code></pre>
+  country_code welfare_time  mean
+  &lt;chr&gt;               &lt;dbl&gt; &lt;dbl&gt;
+1 NGA                 1985.  2.90
+2 NGA                 1992   2.86
+3 NGA                 1996.  2.92
+4 NGA                 2004.  2.92
+5 NGA                 2010.  3.50
+6 NGA                 2012.  3.55</code></pre>
 </div>
 </div>
-<p>Note that welfare time is expressed in a decimal form, e.g.&nbsp;2015.5 for a survey conducted in the middle of 2015.</p>
+<p>Note that this time we need <code>welfare_time</code> rather than year. <code>welfare_time</code> reports the correct timing of the survey and it is expressed in a decimal form, e.g.&nbsp;2015.5 for a survey conducted in the middle of 2015.</p>
 </section>
 <section id="get-interpolated-means" class="level2" data-number="3.2">
 <h2 data-number="3.2" class="anchored" data-anchor-id="get-interpolated-means"><span class="header-section-number">3.2</span> Get interpolated means</h2>
-<p>Welfare means are already calculated for us following the methodology described in the <a href="https://datanalytics.worldbank.org/PIP-Methodology/lineupestimates.html#interpolations">PIP methodology handbook</a>. We can access them using the function <code>get_aux("interpolated_means")</code>:</p>
+<p>Welfare means are already calculated for us following the methodology described in the <a href="https://datanalytics.worldbank.org/PIP-Methodology/lineupestimates.html#interpolations">PIP methodology handbook</a> and source code is available in the <a href="https://github.com/PIP-Technical-Team/wbpip/blob/PROD/R/predict_request_year_mean.R">repository</a> of the <code>{wbpip}</code> package.</p>
+<p>A brief overview:</p>
+<section id="extrapolations" class="level3" data-number="3.2.1">
+<h3 data-number="3.2.1" class="anchored" data-anchor-id="extrapolations"><span class="header-section-number">3.2.1</span> Extrapolations</h3>
+<p><span class="math display">\[
+f\left(y_{\text {reference }}\right)=\frac{N A_{\text {reference }}}{N A_{\text {survey }}} \times f\left(y_{\text {survey }}\right)
+\]</span> where <span class="math inline">\(NA\)</span> is GDP per capita. So estimated means are just scaled survey means based on the ratio of GDP p.c. We apply a <em>pass-through</em> methodology for: - <strong>India</strong>: only 0.7 of growth in GDP will be passed to welfare in urban areas and 0.55 in rural areas. - <strong>Years between 2015-2018</strong>: 0.7 of growth in GDP will be passed to welfare.</p>
+</section>
+<section id="interpolations" class="level3" data-number="3.2.2">
+<h3 data-number="3.2.2" class="anchored" data-anchor-id="interpolations"><span class="header-section-number">3.2.2</span> Interpolations</h3>
+<p>Depends on whether:</p>
+<p><span class="math display">\[
+\operatorname{sign}\left(\frac{\mu_{\text {survey } 2}}{\mu_{\text {survey } 1}}-1\right)=\operatorname{sign}\left(\frac{N A_{\text {survey } 2}}{N A_{\text {reference }}}-1\right)=\operatorname{sign}\left(\frac{N A_{\text {reference }}}{N A_{\text {survey } 1}}-1\right)
+\]</span> is true.</p>
+<p>Easier in code terms:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>means_table <span class="ot">&lt;-</span> <span class="fu">get_aux</span>(<span class="st">"interpolated_means"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, welfare_time, welfare_type, survey_time, predicted_mean_ppp) <span class="sc">|&gt;</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(country_code <span class="sc">==</span> <span class="st">"NGA"</span>)</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(means_table)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>tibble [76 × 6] (S3: tbl_df/tbl/data.frame)
- $ country_code      : chr [1:76] "NGA" "NGA" "NGA" "NGA" ...
- $ year              : num [1:76] 1981 1982 1983 1984 1985 ...
- $ welfare_time      : num [1:76] 1985 1985 1985 1985 1985 ...
- $ welfare_type      : chr [1:76] "consumption" "consumption" "consumption" "consumption" ...
- $ survey_time       : chr [1:76] "1985-1986" "1985-1986" "1985-1986" "1985-1986" ...
- $ predicted_mean_ppp: num [1:76] 3.45 3.22 2.92 2.85 2.91 ...</code></pre>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>is_same_direction <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y) {</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  (x[<span class="dv">2</span>] <span class="sc">-</span> x[<span class="dv">1</span>]) <span class="sc">*</span> (y[<span class="dv">2</span>] <span class="sc">-</span> y[<span class="dv">1</span>]) <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># with x = c(mu_survey1, mu_survey2) and y = c(NA_survey1, NA_survey2)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>If so, we apply same direction, otherwise, diverging direction interpolation:</p>
+<ul>
+<li><strong>Same direction</strong> : we extrapolate means like so:</li>
+</ul>
+<p><span class="math display">\[
+\mu_{\text {reference }}=\left(\mu_{\text {survey } 2}-\mu_{\text {survey } 1}\right) \times \frac{N A_{\text {reference }}-N A_{\text {survey } 1}}{N A_{\text {survey } 2}-N A_{\text {survey } 1}}+\mu_{\text {survey } 1}
+\]</span></p>
+<ul>
+<li><strong>Diverging direction</strong> : means are extrapolated forward by the national account growth rate using the early survey and backwards using the later survey.</li>
+</ul>
+<p>We can access them using the function <code>get_aux("interpolated_means")</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>means_table <span class="ot">&lt;-</span> <span class="fu">get_aux</span>(<span class="st">"interpolated_means"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, welfare_time, welfare_type, survey_time, predicted_mean_ppp) <span class="sc">|&gt;</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(country_code <span class="sc">==</span> <span class="st">"NGA"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>means_table <span class="sc">|&gt;</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="at">n=</span><span class="dv">5</span>) <span class="sc">|&gt;</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(., <span class="at">digits =</span> <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-c33ccfebd9da71dd23af" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-c33ccfebd9da71dd23af">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5"],["NGA","NGA","NGA","NGA","NGA"],[1981,1982,1983,1984,1985],[1985.25,1985.25,1985.25,1985.25,1985.25],["consumption","consumption","consumption","consumption","consumption"],["1985-1986","1985-1986","1985-1986","1985-1986","1985-1986"],[3.45,3.221,2.925,2.853,2.914]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>country_code<\/th>\n      <th>year<\/th>\n      <th>welfare_time<\/th>\n      <th>welfare_type<\/th>\n      <th>survey_time<\/th>\n      <th>predicted_mean_ppp<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[2,3,6]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"country_code","targets":1},{"name":"year","targets":2},{"name":"welfare_time","targets":3},{"name":"welfare_type","targets":4},{"name":"survey_time","targets":5},{"name":"predicted_mean_ppp","targets":6}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </section>
+</section>
 <section id="calculate-interpolated-values" class="level2" data-number="3.3">
 <h2 data-number="3.3" class="anchored" data-anchor-id="calculate-interpolated-values"><span class="header-section-number">3.3</span> Calculate interpolated values</h2>
-<p>Next, we need to calculate interpolated values.</p>
+<p>Next, we need to calculate interpolated values for poverty estimates:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># First we merge the interpolated means with survey estimates</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>merged_data <span class="ot">&lt;-</span> means_table <span class="sc">|&gt;</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(nga_pip, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"country_code"</span>, <span class="st">"welfare_time"</span> <span class="ot">=</span> <span class="st">"wt"</span>))</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>merged_data <span class="sc">|&gt;</span> <span class="fu">head</span>(<span class="at">n=</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 5 × 7
-  country_code  year welfare_time welfare_type survey_time predicted_mean_ppp
-  &lt;chr&gt;        &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;                    &lt;dbl&gt;
-1 NGA           1981        1985. consumption  1985-1986                 3.45
-2 NGA           1982        1985. consumption  1985-1986                 3.22
-3 NGA           1983        1985. consumption  1985-1986                 2.92
-4 NGA           1984        1985. consumption  1985-1986                 2.85
-5 NGA           1985        1985. consumption  1985-1986                 2.91
-# ℹ 1 more variable: mean &lt;dbl&gt;</code></pre>
-</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># First we merge the interpolated means with survey estimates</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>merged_data <span class="ot">&lt;-</span> means_table <span class="sc">|&gt;</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(nga_pip, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"country_code"</span>, <span class="st">"welfare_time"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Then, we need to:</p>
 <ol type="1">
 <li>Scale the adjusted poverty line, using the ratio between the survey <code>mean</code> and the <code>predicted_mean_ppp</code> (instead of adjusting the whole distribution).</li>
 <li>Calculate interpolation weights based on the distance between the <code>welfare_time</code> and the reference <code>year.</code></li>
-<li>Normalize the interpolation weights (calculate <code>interpolation_shr.</code></li>
+<li>Normalize the interpolation weights (calculate <code>interpolation_shr.</code>)</li>
 </ol>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>merged_data_step1 <span class="ot">&lt;-</span> merged_data <span class="sc">|&gt;</span> </span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pl_to_query =</span> <span class="fl">2.15</span> <span class="sc">*</span> mean <span class="sc">/</span> predicted_mean_ppp) <span class="sc">|&gt;</span> </span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pl_to_query)) </span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(merged_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 6 × 7
-  country_code  year welfare_time welfare_type survey_time predicted_mean_ppp
-  &lt;chr&gt;        &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;                    &lt;dbl&gt;
-1 NGA           1981        1985. consumption  1985-1986                 3.45
-2 NGA           1982        1985. consumption  1985-1986                 3.22
-3 NGA           1983        1985. consumption  1985-1986                 2.92
-4 NGA           1984        1985. consumption  1985-1986                 2.85
-5 NGA           1985        1985. consumption  1985-1986                 2.91
-6 NGA           1986        1985. consumption  1985-1986                 2.86
-# ℹ 1 more variable: mean &lt;dbl&gt;</code></pre>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>merged_data_step1 <span class="ot">&lt;-</span> merged_data <span class="sc">|&gt;</span> </span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pl_to_query =</span> <span class="fl">2.15</span> <span class="sc">*</span> mean <span class="sc">/</span> predicted_mean_ppp) <span class="sc">|&gt;</span> <span class="co"># scaled poverty line</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pl_to_query)) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>merged_data_step1 <span class="sc">|&gt;</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, welfare_time, mean, predicted_mean_ppp, pl_to_query) <span class="sc">|&gt;</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="at">n =</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(., <span class="at">digits =</span> <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-7c3b9a489c57d36f3b42" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-7c3b9a489c57d36f3b42">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10"],[1981,1982,1983,1984,1985,1986,1986,1987,1987,1988],[1985.25,1985.25,1985.25,1985.25,1985.25,1985.25,1992,1985.25,1992,1985.25],[2.901,2.901,2.901,2.901,2.901,2.901,2.862,2.901,2.862,2.901],[3.45,3.221,2.925,2.853,2.914,2.862,2.617,2.874,2.627,2.966],[1.808,1.936,2.132,2.186,2.14,2.179,2.352,2.17,2.342,2.103]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>year<\/th>\n      <th>welfare_time<\/th>\n      <th>mean<\/th>\n      <th>predicted_mean_ppp<\/th>\n      <th>pl_to_query<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"year","targets":1},{"name":"welfare_time","targets":2},{"name":"mean","targets":3},{"name":"predicted_mean_ppp","targets":4},{"name":"pl_to_query","targets":5}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>merged_data_step2 <span class="ot">&lt;-</span> merged_data_step1 <span class="sc">|&gt;</span> </span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year) <span class="sc">|&gt;</span>  </span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">interpol_wt =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">abs</span>(welfare_time <span class="sc">-</span> year), <span class="co"># Raw weights based on distance</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">interpol_wtt =</span> <span class="fu">sum</span>(interpol_wt, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="co"># Total weights within group</span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">interpol_shr =</span> interpol_wt <span class="sc">/</span> interpol_wtt, <span class="co"># Normalized weights</span></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">survey_year =</span> <span class="fu">floor</span>(welfare_time) <span class="co"># Survey year as integer</span></span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> <span class="co"># Ungroup for further processing</span></span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(country_code, year, welfare_time)</span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(merged_data_step2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 6 × 12
-  country_code  year welfare_time welfare_type survey_time predicted_mean_ppp
-  &lt;chr&gt;        &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;                    &lt;dbl&gt;
-1 NGA           1981        1985. consumption  1985-1986                 3.45
-2 NGA           1982        1985. consumption  1985-1986                 3.22
-3 NGA           1983        1985. consumption  1985-1986                 2.92
-4 NGA           1984        1985. consumption  1985-1986                 2.85
-5 NGA           1985        1985. consumption  1985-1986                 2.91
-6 NGA           1986        1985. consumption  1985-1986                 2.86
-# ℹ 6 more variables: mean &lt;dbl&gt;, pl_to_query &lt;dbl&gt;, interpol_wt &lt;dbl&gt;,
-#   interpol_wtt &lt;dbl&gt;, interpol_shr &lt;dbl&gt;, survey_year &lt;dbl&gt;</code></pre>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>merged_data_step2 <span class="ot">&lt;-</span> merged_data_step1 <span class="sc">|&gt;</span> </span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year) <span class="sc">|&gt;</span>  </span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">interpol_wt =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">abs</span>(welfare_time <span class="sc">-</span> year), <span class="co"># Raw weights based on distance</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">interpol_wtt =</span> <span class="fu">sum</span>(interpol_wt, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="co"># Total weights within group</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">interpol_shr =</span> interpol_wt <span class="sc">/</span> interpol_wtt, <span class="co"># Normalized weights</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">survey_year =</span> <span class="fu">floor</span>(welfare_time) <span class="co"># Survey year as integer</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> <span class="co"># Ungroup for further processing</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(country_code, year, welfare_time)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>merged_data_step2 <span class="sc">|&gt;</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, welfare_time, survey_year, mean, predicted_mean_ppp, pl_to_query, interpol_wt, interpol_wtt, interpol_shr) <span class="sc">|&gt;</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="at">n=</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(., <span class="at">digits =</span> <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-d2816c9ea2cdb563f90f" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-d2816c9ea2cdb563f90f">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10"],[1981,1982,1983,1984,1985,1986,1986,1987,1987,1988],[1985.25,1985.25,1985.25,1985.25,1985.25,1985.25,1992,1985.25,1992,1985.25],[1985,1985,1985,1985,1985,1985,1992,1985,1992,1985],[2.901,2.901,2.901,2.901,2.901,2.901,2.862,2.901,2.862,2.901],[3.45,3.221,2.925,2.853,2.914,2.862,2.617,2.874,2.627,2.966],[1.808,1.936,2.132,2.186,2.14,2.179,2.352,2.17,2.342,2.103],[0.235,0.308,0.444,0.8,4,1.333,0.167,0.571,0.2,0.364],[0.235,0.308,0.444,0.8,4,1.5,1.5,0.771,0.771,0.614],[1,1,1,1,1,0.889,0.111,0.741,0.259,0.593]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>year<\/th>\n      <th>welfare_time<\/th>\n      <th>survey_year<\/th>\n      <th>mean<\/th>\n      <th>predicted_mean_ppp<\/th>\n      <th>pl_to_query<\/th>\n      <th>interpol_wt<\/th>\n      <th>interpol_wtt<\/th>\n      <th>interpol_shr<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"year","targets":1},{"name":"welfare_time","targets":2},{"name":"survey_year","targets":3},{"name":"mean","targets":4},{"name":"predicted_mean_ppp","targets":5},{"name":"pl_to_query","targets":6},{"name":"interpol_wt","targets":7},{"name":"interpol_wtt","targets":8},{"name":"interpol_shr","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Finally we are ready for the poverty headcount estimation, which we’ll do in two steps:</p>
-<p>First, we use <code>get_stats()</code> to calculate the new poverty headcount at each scaled poverty line (<code>pl_to_query</code>), and at each <code>survey_year.</code> For this exercise you can loop through the values, use <code>rowwise()</code> operations, or use <code>purrr</code> like we did here:</p>
+<p>First, we use <code>get_stats()</code> to calculate the new poverty headcount at each scaled poverty line (<code>pl_to_query</code>), and at each <code>survey_year.</code> For this exercise you can loop through the values, use <code>rowwise()</code> operations, or use <code>{purrr}</code> like we did here:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>merged_data_step3 <span class="ot">&lt;-</span> merged_data_step2 <span class="sc">|&gt;</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">%in%</span> <span class="dv">2015</span><span class="sc">:</span><span class="dv">2020</span>)</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>pl_queries <span class="ot">&lt;-</span> merged_data_step3 <span class="sc">|&gt;</span> </span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">hc =</span> purrr<span class="sc">::</span><span class="fu">map2_dbl</span>(</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">.x =</span> survey_year,</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">.y =</span> pl_to_query,</span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>      <span class="sc">~</span> <span class="fu">get_stats</span>(</span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">country =</span> <span class="st">"NGA"</span>,</span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">reporting_level =</span> <span class="st">"national"</span>,</span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">year =</span> .x,</span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">povline =</span> .y</span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>      )<span class="sc">$</span>headcount[<span class="dv">1</span>]</span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>merged_data_step3 <span class="ot">&lt;-</span> merged_data_step2 <span class="sc">|&gt;</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">%in%</span> <span class="dv">2015</span><span class="sc">:</span><span class="dv">2020</span>) <span class="co"># restricted to some years to reduce computational time</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>pl_queries <span class="ot">&lt;-</span> merged_data_step3 <span class="sc">|&gt;</span> </span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>( <span class="co"># note I am running this within a mutate function so for each hc estimate I run the get_stats function for a given year and a given (adjusted) poverty line</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">hc =</span> purrr<span class="sc">::</span><span class="fu">map2_dbl</span>(</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">.x =</span> survey_year,</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">.y =</span> pl_to_query,</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>      <span class="sc">~</span> <span class="fu">get_stats</span>(</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">country =</span> <span class="st">"NGA"</span>,</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">reporting_level =</span> <span class="st">"national"</span>,</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">year =</span> .x,</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">povline =</span> .y</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>      )<span class="sc">$</span>headcount[<span class="dv">1</span>]</span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>pl_queries <span class="sc">|&gt;</span> <span class="fu">select</span>(year, welfare_time, survey_year, pl_to_query, hc) <span class="sc">|&gt;</span> <span class="fu">str</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>tibble [10 × 5] (S3: tbl_df/tbl/data.frame)
- $ year        : num [1:10] 2015 2015 2016 2016 2017 ...
- $ welfare_time: num [1:10] 2012 2016 2016 2019 2016 ...
- $ survey_year : num [1:10] 2012 2015 2015 2018 2015 ...
- $ pl_to_query : num [1:10] 2.07 2.12 2.16 2.14 2.16 ...
- $ hc          : num [1:10] 0.316 0.315 0.324 0.308 0.325 ...</code></pre>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>pl_queries <span class="sc">|&gt;</span> </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, welfare_time, survey_year, pl_to_query, hc) <span class="sc">|&gt;</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(., <span class="at">digits =</span> <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">scrollX =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-180af73980c9edcf1d26" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-180af73980c9edcf1d26">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10"],[2015,2015,2016,2016,2017,2017,2018,2018,2019,2020],[2012.5,2015.5,2015.5,2018.75,2015.5,2018.75,2015.5,2018.75,2018.75,2018.75],[2012,2015,2015,2018,2015,2018,2015,2018,2018,2018],[2.069,2.12,2.156,2.143,2.16,2.148,2.162,2.149,2.151,2.216],[0.316,0.315,0.324,0.308,0.325,0.308,0.326,0.308,0.309,0.325]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>year<\/th>\n      <th>welfare_time<\/th>\n      <th>survey_year<\/th>\n      <th>pl_to_query<\/th>\n      <th>hc<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"year","targets":1},{"name":"welfare_time","targets":2},{"name":"survey_year","targets":3},{"name":"pl_to_query","targets":4},{"name":"hc","targets":5}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Then, we calculate the weighted average of those headcounts estimates <code>hc</code> based on the share of the time (<code>interpolated_shr</code>)</p>
@@ -549,8 +590,7 @@ dbl (7): year, percentile, avg_welfare, pop_share, welfare_share, quantile, pop
 <h1 data-number="4"><span class="header-section-number">4</span> Estimate Global and Regional Poverty</h1>
 <p>In Part 1, we looked at the function <code>get_wb()</code>, which gives you access to regional and global estimates of poverty and inequality metrics.</p>
 <p>In this session, we will look at how exactly those numbers are calculated using country-level data and auxiliary tables (accessed with <code>get_aux()</code>).</p>
-<p>Before starting, let’s have another look at the regional estimates available in PIP, and for which regions we need to calculate it:</p>
-<p>However, there is not a one-to-one correspondence between the regions in the regional estimates and the regions in the country-level data:</p>
+<p>First, note that there is not a one-to-one correspondence between the regions in the regional estimates and the regions in the country-level data:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>pip_regional <span class="ot">&lt;-</span> <span class="fu">get_wb</span>()</span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -620,7 +660,7 @@ dbl (7): year, percentile, avg_welfare, pop_share, welfare_share, quantile, pop
 # ℹ 7,250 more rows</code></pre>
 </div>
 </div>
-<p>Data are now identified uniquely by <code>country_code</code>, <code>year</code>, and <code>data_level</code>.</p>
+<p>Data are now identified uniquely by <code>country_code</code>, <code>year</code>, and <code>reporting_level</code>.</p>
 <p>We get additional country-level reference table to match country codes with regions.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>country_tables <span class="ot">&lt;-</span> <span class="fu">get_aux</span>(<span class="st">"country_list"</span>) <span class="sc">|&gt;</span></span>
@@ -661,7 +701,7 @@ dbl (7): year, percentile, avg_welfare, pop_share, welfare_share, quantile, pop
 </div>
 <p>And check that they are uniquely identified:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(joyn)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(joyn) <span class="co"># This is a package developed by my team!</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>
 Attaching package: 'joyn'</code></pre>
@@ -796,34 +836,38 @@ override using the `.groups` argument.</code></pre>
 </section>
 <section id="calculate-the-international-poverty-line" class="level1" data-number="5">
 <h1 data-number="5"><span class="header-section-number">5</span> Calculate the international poverty line</h1>
-<p>The IPL is now derived as the median of the national poverty lines of 28 of the world’s poorest countries, expressed in 2017 PPPs. For convenience, we will make use of an already generated dataset containing headcount ratios for this set of countries. More on the international poverty line (theory and Q&amp;A): <a href="https://www.worldbank.org/en/news/factsheet/2022/05/02/fact-sheet-an-adjustment-to-global-poverty-lines#9">Factseet on Adjustment to the Poverty Line</a>.</p>
+<p>The IPL is now derived as the median of the national poverty lines of 28 of the world’s poorest countries, expressed in 2017 PPPs. For convenience, we will make use of an already generated dataset containing headcount ratios for this set of countries. More on the international poverty line (theory and Q&amp;A): <a href="https://www.worldbank.org/en/news/factsheet/2022/05/02/fact-sheet-an-adjustment-to-global-poverty-lines#9">Factseet on Adjustment to the Poverty Line</a>. Note that you can retrieve the poverty lines also with:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">get_aux</span>(<span class="st">"national_poverty_lines"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>But you need to filter them accordingly.</p>
 <section id="load-data-and-query-pip" class="level2" data-number="5.1">
 <h2 data-number="5.1" class="anchored" data-anchor-id="load-data-and-query-pip"><span class="header-section-number">5.1</span> Load Data and query PIP</h2>
 <p>First we load the headcount ratios for the 28 countries:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>npl_data <span class="ot">&lt;-</span> <span class="fu">read_stata</span>(<span class="fu">here</span>(<span class="st">"02_data"</span>, <span class="st">"national_poverty_rates_lic.dta"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>npl_data <span class="ot">&lt;-</span> <span class="fu">read_stata</span>(<span class="fu">here</span>(<span class="st">"02_data"</span>, <span class="st">"national_poverty_rates_lic.dta"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Next we query PIP to derive the poverty line at a given headcount. To do so, we need to use the argument <code>popshare</code>, and loop through (or use <code>{purrr}</code> for vectorized loops) each country and headcount ratio:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>harmonized_npl <span class="ot">&lt;-</span> npl_data <span class="sc">|&gt;</span> </span>
-<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">pip_data =</span> <span class="fu">map2</span>(</span>
-<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">.x =</span> country_code, </span>
-<span id="cb68-5"><a href="#cb68-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">.y =</span> headcount_nat, </span>
-<span id="cb68-6"><a href="#cb68-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">.f =</span> <span class="sc">~</span> <span class="fu">get_stats</span>(</span>
-<span id="cb68-7"><a href="#cb68-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">country =</span> .x, </span>
-<span id="cb68-8"><a href="#cb68-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">year =</span> <span class="st">"all"</span>, </span>
-<span id="cb68-9"><a href="#cb68-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">popshare =</span> .y</span>
-<span id="cb68-10"><a href="#cb68-10" aria-hidden="true" tabindex="-1"></a>    ))</span>
-<span id="cb68-11"><a href="#cb68-11" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>harmonized_npl <span class="ot">&lt;-</span> npl_data <span class="sc">|&gt;</span> </span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">pip_data =</span> <span class="fu">map2</span>(</span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">.x =</span> country_code, </span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">.y =</span> headcount_nat, </span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">.f =</span> <span class="sc">~</span> <span class="fu">get_stats</span>(</span>
+<span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">country =</span> .x, </span>
+<span id="cb69-8"><a href="#cb69-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">year =</span> <span class="st">"all"</span>, </span>
+<span id="cb69-9"><a href="#cb69-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">popshare =</span> .y</span>
+<span id="cb69-10"><a href="#cb69-10" aria-hidden="true" tabindex="-1"></a>    ))</span>
+<span id="cb69-11"><a href="#cb69-11" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested <span class="ot">&lt;-</span> harmonized_npl <span class="sc">|&gt;</span></span>
-<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, pip_data) <span class="sc">|&gt;</span></span>
-<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Unnest the fetched data</span></span>
-<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(pip_data, <span class="at">names_sep =</span> <span class="st">"."</span>)</span>
-<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested <span class="sc">|&gt;</span> <span class="fu">head</span>(<span class="at">n=</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested <span class="ot">&lt;-</span> harmonized_npl <span class="sc">|&gt;</span></span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, pip_data) <span class="sc">|&gt;</span></span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Unnest the fetched data</span></span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(pip_data, <span class="at">names_sep =</span> <span class="st">"."</span>)</span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb70-6"><a href="#cb70-6" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested <span class="sc">|&gt;</span> <span class="fu">head</span>(<span class="at">n=</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 5 × 46
   country_code  year pip_data.region_name  pip_data.region_code
@@ -843,19 +887,19 @@ override using the `.groups` argument.</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested <span class="ot">&lt;-</span></span>
-<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested <span class="sc">|&gt;</span></span>
-<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Filter and prepare final dataset</span></span>
-<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(pip_data.year <span class="sc">==</span> year, </span>
-<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>         pip_data.welfare_type <span class="sc">==</span> <span class="st">"consumption"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
-<span id="cb71-7"><a href="#cb71-7" aria-hidden="true" tabindex="-1"></a>    country_code, pip_data.region_code, pip_data.year, pip_data.welfare_time, pip_data.headcount, </span>
-<span id="cb71-8"><a href="#cb71-8" aria-hidden="true" tabindex="-1"></a>    pip_data.poverty_line, pip_data.reporting_level, pip_data.welfare_type</span>
-<span id="cb71-9"><a href="#cb71-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
-<span id="cb71-10"><a href="#cb71-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">harm_npl =</span> pip_data.poverty_line) <span class="sc">|&gt;</span> </span>
-<span id="cb71-11"><a href="#cb71-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">harm_npl =</span> <span class="fu">as.numeric</span>(harm_npl))</span>
-<span id="cb71-12"><a href="#cb71-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb71-13"><a href="#cb71-13" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested <span class="ot">&lt;-</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested <span class="sc">|&gt;</span></span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Filter and prepare final dataset</span></span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(pip_data.year <span class="sc">==</span> year, </span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>         pip_data.welfare_type <span class="sc">==</span> <span class="st">"consumption"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a>    country_code, pip_data.region_code, pip_data.year, pip_data.welfare_time, pip_data.headcount, </span>
+<span id="cb72-8"><a href="#cb72-8" aria-hidden="true" tabindex="-1"></a>    pip_data.poverty_line, pip_data.reporting_level, pip_data.welfare_type</span>
+<span id="cb72-9"><a href="#cb72-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb72-10"><a href="#cb72-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">harm_npl =</span> pip_data.poverty_line) <span class="sc">|&gt;</span> </span>
+<span id="cb72-11"><a href="#cb72-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">harm_npl =</span> <span class="fu">as.numeric</span>(harm_npl))</span>
+<span id="cb72-12"><a href="#cb72-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-13"><a href="#cb72-13" aria-hidden="true" tabindex="-1"></a>harmonized_npl_unnested</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 28 × 8
    country_code pip_data.region_code pip_data.year pip_data.welfare_time
@@ -879,34 +923,34 @@ override using the `.groups` argument.</code></pre>
 <section id="calculate-the-international-poverty-line-ipl" class="level2" data-number="5.2">
 <h2 data-number="5.2" class="anchored" data-anchor-id="calculate-the-international-poverty-line-ipl"><span class="header-section-number">5.2</span> Calculate the International Poverty Line (IPL)</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>ipl <span class="ot">&lt;-</span> harmonized_npl_unnested <span class="sc">|&gt;</span> </span>
-<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">ipl =</span> <span class="fu">median</span>(harm_npl, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(ipl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>ipl <span class="ot">&lt;-</span> harmonized_npl_unnested <span class="sc">|&gt;</span> </span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">ipl =</span> <span class="fu">median</span>(harm_npl, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(ipl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="visualize-harmonized-poverty-lines-by-region" class="level2" data-number="5.3">
 <h2 data-number="5.3" class="anchored" data-anchor-id="visualize-harmonized-poverty-lines-by-region"><span class="header-section-number">5.3</span> Visualize Harmonized Poverty Lines by Region</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(harmonized_npl_unnested, </span>
-<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(pip_data.region_code, harm_npl), <span class="at">y =</span> harm_npl, <span class="at">fill =</span> pip_data.region_code)) <span class="sc">+</span></span>
-<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">outlier.shape =</span> <span class="cn">NA</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
-<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_jitter</span>(<span class="at">color =</span> <span class="st">"darkblue"</span>, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">width =</span> <span class="fl">0.2</span>, <span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
-<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="fu">aes</span>(<span class="at">yintercept =</span> ipl), <span class="at">colour =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
-<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Harmonized National Poverty Lines by Region"</span>,</span>
-<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">paste</span>(<span class="st">"Median IPL:"</span>, <span class="fu">round</span>(ipl, <span class="dv">2</span>), <span class="st">"2017 PPP dollars"</span>),</span>
-<span id="cb74-9"><a href="#cb74-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Region"</span>,</span>
-<span id="cb74-10"><a href="#cb74-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Harmonized National Poverty Line (PPP $)"</span></span>
-<span id="cb74-11"><a href="#cb74-11" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb74-12"><a href="#cb74-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
-<span id="cb74-13"><a href="#cb74-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb74-14"><a href="#cb74-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
-<span id="cb74-15"><a href="#cb74-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>)</span>
-<span id="cb74-16"><a href="#cb74-16" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(harmonized_npl_unnested, </span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(pip_data.region_code, harm_npl), <span class="at">y =</span> harm_npl, <span class="at">fill =</span> pip_data.region_code)) <span class="sc">+</span></span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">outlier.shape =</span> <span class="cn">NA</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_jitter</span>(<span class="at">color =</span> <span class="st">"darkblue"</span>, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">width =</span> <span class="fl">0.2</span>, <span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="fu">aes</span>(<span class="at">yintercept =</span> ipl), <span class="at">colour =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Harmonized National Poverty Lines by Region"</span>,</span>
+<span id="cb75-8"><a href="#cb75-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">paste</span>(<span class="st">"Median IPL:"</span>, <span class="fu">round</span>(ipl, <span class="dv">2</span>), <span class="st">"2017 PPP dollars"</span>),</span>
+<span id="cb75-9"><a href="#cb75-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Region"</span>,</span>
+<span id="cb75-10"><a href="#cb75-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Harmonized National Poverty Line (PPP $)"</span></span>
+<span id="cb75-11"><a href="#cb75-11" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb75-12"><a href="#cb75-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
+<span id="cb75-13"><a href="#cb75-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb75-14"><a href="#cb75-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
+<span id="cb75-15"><a href="#cb75-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>)</span>
+<span id="cb75-16"><a href="#cb75-16" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="R_part_2_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="R_part_2_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -915,7 +959,7 @@ override using the `.groups` argument.</code></pre>
 </section>
 <section id="exercise-1-kuznets-curve" class="level1" data-number="6">
 <h1 data-number="6"><span class="header-section-number">6</span> Exercise 1: Kuznets Curve</h1>
-<p>We can now move on to more interactive exercises which use PIP data. First, we are going to explore the Kuznets curve hypothesis. The Kuznets curve hypothesis posits that inequality first increases and then decreases as a country develops. The hypothesis is often represented by an <strong>inverted U-shaped curve</strong>.</p>
+<p>Here are some more interactive exercises which use PIP data. First, we are going to explore the Kuznets curve hypothesis. The Kuznets curve hypothesis posits that inequality first increases and then decreases as a country develops. The hypothesis is often represented by an <strong>inverted U-shaped curve</strong>.</p>
 <p>To do so, we(you) need to:</p>
 <ol type="1">
 <li><p>Plot the relationship between an inequality metric and log mean welfare.</p></li>
@@ -927,32 +971,32 @@ override using the `.groups` argument.</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load PIP data</span></span>
-<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>pip_data <span class="ot">&lt;-</span> <span class="fu">get_stats</span>()</span>
-<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># filter(welfare_type == "consumption", reporting_level == "national") Does it hold for different types of data?</span></span>
-<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot </span></span>
-<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a>scatterplot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(pip_data, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">log</span>(mean), <span class="at">y =</span> gini)) <span class="sc">+</span></span>
-<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"darkblue"</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span>  </span>
-<span id="cb75-8"><a href="#cb75-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> y <span class="sc">~</span> <span class="fu">poly</span>(x, <span class="dv">2</span>), <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">fill =</span> <span class="st">"pink"</span>, <span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
-<span id="cb75-9"><a href="#cb75-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb75-10"><a href="#cb75-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Exploring the Kuznets Curve Hypothesis"</span>,</span>
-<span id="cb75-11"><a href="#cb75-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Relationship between inequality (Gini) and log welfare"</span>,</span>
-<span id="cb75-12"><a href="#cb75-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Log of Mean Welfare"</span>,</span>
-<span id="cb75-13"><a href="#cb75-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Gini Coefficient"</span></span>
-<span id="cb75-14"><a href="#cb75-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb75-15"><a href="#cb75-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
-<span id="cb75-16"><a href="#cb75-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb75-17"><a href="#cb75-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
-<span id="cb75-18"><a href="#cb75-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>)</span>
-<span id="cb75-19"><a href="#cb75-19" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb75-20"><a href="#cb75-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb75-21"><a href="#cb75-21" aria-hidden="true" tabindex="-1"></a>scatterplot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load PIP data</span></span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>pip_data <span class="ot">&lt;-</span> <span class="fu">get_stats</span>()</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># filter(welfare_type == "consumption", reporting_level == "national") Does it hold for different types of data?</span></span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot </span></span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a>scatterplot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(pip_data, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">log</span>(mean), <span class="at">y =</span> gini)) <span class="sc">+</span></span>
+<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"darkblue"</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span>  </span>
+<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> y <span class="sc">~</span> <span class="fu">poly</span>(x, <span class="dv">2</span>), <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">fill =</span> <span class="st">"pink"</span>, <span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb76-10"><a href="#cb76-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Exploring the Kuznets Curve Hypothesis"</span>,</span>
+<span id="cb76-11"><a href="#cb76-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Relationship between inequality (Gini) and log welfare"</span>,</span>
+<span id="cb76-12"><a href="#cb76-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Log of Mean Welfare"</span>,</span>
+<span id="cb76-13"><a href="#cb76-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Gini Coefficient"</span></span>
+<span id="cb76-14"><a href="#cb76-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb76-15"><a href="#cb76-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
+<span id="cb76-16"><a href="#cb76-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb76-17"><a href="#cb76-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
+<span id="cb76-18"><a href="#cb76-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>)</span>
+<span id="cb76-19"><a href="#cb76-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb76-20"><a href="#cb76-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-21"><a href="#cb76-21" aria-hidden="true" tabindex="-1"></a>scatterplot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="R_part_2_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="R_part_2_files/figure-html/unnamed-chunk-45-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -964,9 +1008,9 @@ override using the `.groups` argument.</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Regression check</span></span>
-<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">lm</span>(gini <span class="sc">~</span> <span class="fu">log</span>(mean)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="fu">I</span>(<span class="fu">log</span>(mean)<span class="sc">^</span><span class="dv">2</span>), <span class="at">data =</span> pip_data)</span>
-<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Regression check</span></span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">lm</span>(gini <span class="sc">~</span> <span class="fu">log</span>(mean)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="fu">I</span>(<span class="fu">log</span>(mean)<span class="sc">^</span><span class="dv">2</span>), <span class="at">data =</span> pip_data)</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -1013,12 +1057,12 @@ F-statistic: 204.9 on 2 and 2453 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a>scatterplot <span class="sc">+</span> <span class="fu">facet_wrap</span>(<span class="sc">~</span>welfare_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>scatterplot <span class="sc">+</span> <span class="fu">facet_wrap</span>(<span class="sc">~</span>welfare_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="R_part_2_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="R_part_2_files/figure-html/unnamed-chunk-47-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1039,28 +1083,28 @@ F-statistic: 204.9 on 2 and 2453 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot change in number of poor (in millions) by region</span></span>
-<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>poverty_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(wb_data, <span class="fu">aes</span>(<span class="at">x =</span> region_name, <span class="at">y =</span> changeinpoor <span class="sc">/</span> <span class="dv">10</span><span class="sc">^</span><span class="dv">6</span>, <span class="at">fill =</span> region_name)) <span class="sc">+</span></span>
-<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
-<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Change in Extreme Poverty (2019–2020)"</span>,</span>
-<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Change in the number of extreme poor (millions) by region"</span>,</span>
-<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Region"</span>,</span>
-<span id="cb79-8"><a href="#cb79-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Change in Millions"</span></span>
-<span id="cb79-9"><a href="#cb79-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb79-10"><a href="#cb79-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
-<span id="cb79-11"><a href="#cb79-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb79-12"><a href="#cb79-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
-<span id="cb79-13"><a href="#cb79-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>),</span>
-<span id="cb79-14"><a href="#cb79-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span></span>
-<span id="cb79-15"><a href="#cb79-15" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb79-16"><a href="#cb79-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb79-17"><a href="#cb79-17" aria-hidden="true" tabindex="-1"></a>poverty_plot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot change in number of poor (in millions) by region</span></span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>poverty_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(wb_data, <span class="fu">aes</span>(<span class="at">x =</span> region_name, <span class="at">y =</span> changeinpoor <span class="sc">/</span> <span class="dv">10</span><span class="sc">^</span><span class="dv">6</span>, <span class="at">fill =</span> region_name)) <span class="sc">+</span></span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
+<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb80-5"><a href="#cb80-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Change in Extreme Poverty (2019–2020)"</span>,</span>
+<span id="cb80-6"><a href="#cb80-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Change in the number of extreme poor (millions) by region"</span>,</span>
+<span id="cb80-7"><a href="#cb80-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Region"</span>,</span>
+<span id="cb80-8"><a href="#cb80-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Change in Millions"</span></span>
+<span id="cb80-9"><a href="#cb80-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb80-10"><a href="#cb80-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
+<span id="cb80-11"><a href="#cb80-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb80-12"><a href="#cb80-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
+<span id="cb80-13"><a href="#cb80-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>),</span>
+<span id="cb80-14"><a href="#cb80-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span></span>
+<span id="cb80-15"><a href="#cb80-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb80-16"><a href="#cb80-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-17"><a href="#cb80-17" aria-hidden="true" tabindex="-1"></a>poverty_plot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="R_part_2_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="R_part_2_files/figure-html/unnamed-chunk-49-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1072,86 +1116,91 @@ F-statistic: 204.9 on 2 and 2453 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data for Gini index</span></span>
-<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>df_gini <span class="ot">&lt;-</span> <span class="fu">get_stats</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>((year <span class="sc">==</span> <span class="dv">2019</span> <span class="sc">|</span> year <span class="sc">==</span> <span class="dv">2020</span>) <span class="sc">&amp;</span> reporting_level <span class="sc">==</span> <span class="st">"national"</span>) <span class="sc">|&gt;</span> <span class="co"># Select years and national data</span></span>
-<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code, welfare_type, comparable_spell) <span class="sc">|&gt;</span> <span class="co"># Group by country and welfare type</span></span>
-<span id="cb80-5"><a href="#cb80-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">n</span>() <span class="sc">==</span> <span class="dv">2</span>) <span class="sc">|&gt;</span> <span class="co"># Keep only countries with data in both years</span></span>
-<span id="cb80-6"><a href="#cb80-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(country_code, year) <span class="sc">|&gt;</span> <span class="co"># Ensure sorted order</span></span>
-<span id="cb80-7"><a href="#cb80-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ginichange =</span> gini <span class="sc">-</span> <span class="fu">lag</span>(gini)) <span class="sc">|&gt;</span> <span class="co"># Calculate change in Gini</span></span>
-<span id="cb80-8"><a href="#cb80-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="dv">2020</span>) <span class="co"># Keep only 2020 data for plotting</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data for Gini index</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>df_gini <span class="ot">&lt;-</span> <span class="fu">get_stats</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>((year <span class="sc">==</span> <span class="dv">2019</span> <span class="sc">|</span> year <span class="sc">==</span> <span class="dv">2020</span>) <span class="sc">&amp;</span> reporting_level <span class="sc">==</span> <span class="st">"national"</span>) <span class="sc">|&gt;</span> <span class="co"># Select years and national data</span></span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code, welfare_type, comparable_spell) <span class="sc">|&gt;</span> <span class="co"># Group by country and welfare type</span></span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">n</span>() <span class="sc">==</span> <span class="dv">2</span>) <span class="sc">|&gt;</span> <span class="co"># Keep only countries with data in both years</span></span>
+<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(country_code, year) <span class="sc">|&gt;</span> <span class="co"># Ensure sorted order</span></span>
+<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ginichange =</span> gini <span class="sc">-</span> <span class="fu">lag</span>(gini)) <span class="sc">|&gt;</span> <span class="co"># Calculate change in Gini</span></span>
+<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="dv">2020</span>) <span class="co"># Keep only 2020 data for plotting</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>Next, plot the data. Unfold the code to see the answer:</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot change in Gini index by country</span></span>
-<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>gini_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df_gini, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(country_name, <span class="sc">+</span> ginichange), <span class="at">y =</span> ginichange <span class="sc">*</span> <span class="dv">100</span>, <span class="at">fill =</span> region_name)) <span class="sc">+</span></span>
-<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
-<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Change in Gini Index (2019–2020)"</span>,</span>
-<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Change in inequality (Gini points) for countries with comparable data"</span>,</span>
-<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Country"</span>,</span>
-<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Change in Gini Points"</span></span>
-<span id="cb81-9"><a href="#cb81-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb81-10"><a href="#cb81-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
-<span id="cb81-11"><a href="#cb81-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb81-12"><a href="#cb81-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
-<span id="cb81-13"><a href="#cb81-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>, <span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust =</span> <span class="dv">1</span>)</span>
-<span id="cb81-14"><a href="#cb81-14" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb81-15"><a href="#cb81-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb81-16"><a href="#cb81-16" aria-hidden="true" tabindex="-1"></a>gini_plot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot change in Gini index by country</span></span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>gini_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df_gini, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(country_name, <span class="sc">+</span> ginichange), <span class="at">y =</span> ginichange <span class="sc">*</span> <span class="dv">100</span>, <span class="at">fill =</span> region_name)) <span class="sc">+</span></span>
+<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
+<span id="cb82-4"><a href="#cb82-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb82-5"><a href="#cb82-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Change in Gini Index (2019–2020)"</span>,</span>
+<span id="cb82-6"><a href="#cb82-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Change in inequality (Gini points) for countries with comparable data"</span>,</span>
+<span id="cb82-7"><a href="#cb82-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Country"</span>,</span>
+<span id="cb82-8"><a href="#cb82-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Change in Gini Points"</span></span>
+<span id="cb82-9"><a href="#cb82-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb82-10"><a href="#cb82-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">14</span>) <span class="sc">+</span></span>
+<span id="cb82-11"><a href="#cb82-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb82-12"><a href="#cb82-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">hjust =</span> <span class="fl">0.5</span>),</span>
+<span id="cb82-13"><a href="#cb82-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>, <span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust =</span> <span class="dv">1</span>)</span>
+<span id="cb82-14"><a href="#cb82-14" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb82-15"><a href="#cb82-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-16"><a href="#cb82-16" aria-hidden="true" tabindex="-1"></a>gini_plot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="R_part_2_files/figure-html/unnamed-chunk-45-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="R_part_2_files/figure-html/unnamed-chunk-51-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 </section>
-<section id="exercise-3-spl-vs-pl" class="level2" data-number="7.3">
-<h2 data-number="7.3" class="anchored" data-anchor-id="exercise-3-spl-vs-pl"><span class="header-section-number">7.3</span> Exercise 3: SPL vs PL</h2>
-<p>Plot the different trends in headcount ratios when calculated based on the IPL vs the SPL for Italy (or another country of your choice):</p>
+</section>
+<section id="exercise-3-spl-vs-pl" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Exercise 3: SPL vs PL</h1>
+<p>Plot the different trends in headcount ratios when calculated based on the IPL vs the SPL for Italy (or another country of your choice). Hint: <code>get_stats()</code> will give you the data you need (<code>spl</code> variable).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a>ITA_spl <span class="ot">&lt;-</span> <span class="fu">get_stats</span>(<span class="at">country =</span> <span class="st">"ITA"</span>)  <span class="sc">|&gt;</span> </span>
-<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year<span class="sc">&gt;</span><span class="dv">2005</span>) <span class="sc">|&gt;</span></span>
-<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, spl)</span>
-<span id="cb82-4"><a href="#cb82-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb82-5"><a href="#cb82-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb82-6"><a href="#cb82-6" aria-hidden="true" tabindex="-1"></a>ITA_spl_data <span class="ot">&lt;-</span> <span class="fu">map2_dfr</span>(<span class="at">.x =</span> ITA_spl<span class="sc">$</span>spl, </span>
-<span id="cb82-7"><a href="#cb82-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">.y =</span> ITA_spl<span class="sc">$</span>year,</span>
-<span id="cb82-8"><a href="#cb82-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">.f =</span> <span class="sc">~</span> <span class="fu">get_stats</span>(<span class="at">country =</span> <span class="st">"ITA"</span>, </span>
-<span id="cb82-9"><a href="#cb82-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">povline =</span> .x,</span>
-<span id="cb82-10"><a href="#cb82-10" aria-hidden="true" tabindex="-1"></a>                         <span class="at">year =</span> .y)) <span class="sc">|&gt;</span></span>
-<span id="cb82-11"><a href="#cb82-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, poverty_line, headcount)</span>
-<span id="cb82-12"><a href="#cb82-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb82-13"><a href="#cb82-13" aria-hidden="true" tabindex="-1"></a>ITA_pl_data <span class="ot">&lt;-</span> <span class="fu">get_stats</span>(<span class="at">country =</span> <span class="st">"ITA"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb82-14"><a href="#cb82-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, poverty_line, headcount) <span class="sc">|&gt;</span></span>
-<span id="cb82-15"><a href="#cb82-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year<span class="sc">&gt;</span><span class="dv">2005</span>)</span>
-<span id="cb82-16"><a href="#cb82-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb82-17"><a href="#cb82-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb82-18"><a href="#cb82-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> ITA_spl_data, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> headcount), <span class="at">color =</span> <span class="st">"blue"</span>) <span class="sc">+</span></span>
-<span id="cb82-19"><a href="#cb82-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> ITA_pl_data, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> headcount), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
-<span id="cb82-20"><a href="#cb82-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Headcount ratio SPL vs PL in Italy"</span>,</span>
-<span id="cb82-21"><a href="#cb82-21" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Year"</span>,</span>
-<span id="cb82-22"><a href="#cb82-22" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Headcount ratio"</span>) <span class="sc">+</span></span>
-<span id="cb82-23"><a href="#cb82-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb82-24"><a href="#cb82-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>country_chosen <span class="ot">&lt;-</span> <span class="st">"ITA"</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>country_spl <span class="ot">&lt;-</span> <span class="fu">get_stats</span>(<span class="at">country =</span> country_chosen)  <span class="sc">|&gt;</span> </span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#filter(year&gt;2005) |&gt;</span></span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, spl)</span>
+<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-7"><a href="#cb83-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-8"><a href="#cb83-8" aria-hidden="true" tabindex="-1"></a>country_spl_data <span class="ot">&lt;-</span> <span class="fu">map2_dfr</span>(<span class="at">.x =</span> country_spl<span class="sc">$</span>spl, </span>
+<span id="cb83-9"><a href="#cb83-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">.y =</span> country_spl<span class="sc">$</span>year,</span>
+<span id="cb83-10"><a href="#cb83-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">.f =</span> <span class="sc">~</span> <span class="fu">get_stats</span>(<span class="at">country =</span> country_chosen, </span>
+<span id="cb83-11"><a href="#cb83-11" aria-hidden="true" tabindex="-1"></a>                         <span class="at">povline =</span> .x,</span>
+<span id="cb83-12"><a href="#cb83-12" aria-hidden="true" tabindex="-1"></a>                         <span class="at">year =</span> .y)) <span class="sc">|&gt;</span></span>
+<span id="cb83-13"><a href="#cb83-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(country_code, year, poverty_line, headcount)</span>
+<span id="cb83-14"><a href="#cb83-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-15"><a href="#cb83-15" aria-hidden="true" tabindex="-1"></a>country_pl_data <span class="ot">&lt;-</span> <span class="fu">get_stats</span>(<span class="at">country =</span> country_chosen) <span class="sc">|&gt;</span></span>
+<span id="cb83-16"><a href="#cb83-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, poverty_line, headcount)</span>
+<span id="cb83-17"><a href="#cb83-17" aria-hidden="true" tabindex="-1"></a>  <span class="co">#filter(year&gt;2005)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> country_spl_data, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> headcount), <span class="at">color =</span> <span class="st">"blue"</span>) <span class="sc">+</span></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> country_spl_data, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> headcount), <span class="at">color =</span> <span class="st">"blue"</span>) <span class="sc">+</span></span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> country_pl_data, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> headcount), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> country_pl_data, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> headcount), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="fu">paste</span>(<span class="st">"Headcount ratio SPL vs PL in"</span>, country_chosen),</span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Year"</span>,</span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Headcount ratio"</span>) <span class="sc">+</span></span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="R_part_2_files/figure-html/unnamed-chunk-46-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="R_part_2_files/figure-html/unnamed-chunk-53-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
-</section>
 </section>
 
 </main>
