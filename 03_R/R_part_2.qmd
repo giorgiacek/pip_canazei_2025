@@ -16,6 +16,7 @@ format:
 library(pipr)
 library(tidyverse)
 library(here)
+# install.packages("joyn")
 # library(joyn) # not necessary, but nice features, and developed by our own team!
 ```
 
@@ -29,11 +30,11 @@ The **objectives** of this session are to:
 -   **Replication of reference years** (interpolation).
 -   Calculate the **international poverty line**.
 
-2.  Explore the data through some visualizations.
+::: {.callout-note}
+These exercises were originally written in Stata by Samuel Kofi Tetteh Bah (stettehbaah\@worldbank.org). A version of these exercises are available in the Stata .do file `Stata_part_2.do`.
+:::
 
--   Kuznets curve.
--   COVID-19 impacts.
--   PL vs SPL
+2.  Explore the data through one **visualization** exercise showing the difference between the societal and international poverty line (**SPL vs IPL**).
 
 # Replicate PIP Data for Nigeria (Survey Years)
 
@@ -89,7 +90,6 @@ nga_100bin |>
   DT::datatable(options = list(scrollX = TRUE))
 ```
 
-
 ```{r}
 nga_100bin |>
   dplyr::left_join(nga_hc, by = c("country_code", "year"))|>
@@ -98,8 +98,8 @@ nga_100bin |>
   DT::datatable(options = list(scrollX = TRUE))
 ```
 
-
 ## Version 2: using actual microdata
+
 First, we need to get auxiliary data for **CPI** and **PPPs**:
 
 ```{r}
@@ -153,7 +153,6 @@ nga_hc |>
   dplyr::filter(year == 2018)
 ```
 
-
 # Replicate PIP Data for Nigeria (Reference Years)
 
 In part 1 we looked at the difference between survey year estimates and reference year estimates, as well as the difference between `fill_gaps = TRUE` and `nowcast = TRUE`. Now, we are going to go through a replication of PIP data for reference years for Nigeria.
@@ -187,22 +186,21 @@ Welfare means are already calculated for us following the methodology described 
 A brief overview:
 
 ### Extrapolations
+
 $$
 f\left(y_{\text {reference }}\right)=\frac{N A_{\text {reference }}}{N A_{\text {survey }}} \times f\left(y_{\text {survey }}\right)
-$$
-where $NA$ is GDP per capita. So estimated means are just scaled survey means based on the ratio of GDP p.c. We apply a *pass-through* methodology for:
-- **India**: only 0.7 of growth in GDP will be passed to welfare in urban areas and 0.55 in rural areas.
-- **Years between 2015-2018**: 0.7 of growth in GDP will be passed to welfare.
+$$ where $NA$ is GDP per capita. So estimated means are just scaled survey means based on the ratio of GDP p.c. We apply a *pass-through* methodology for: - **India**: only 0.7 of growth in GDP will be passed to welfare in urban areas and 0.55 in rural areas. - **Years between 2015-2018**: 0.7 of growth in GDP will be passed to welfare.
 
 ### Interpolations
+
 Depends on whether:
 
 $$
 \operatorname{sign}\left(\frac{\mu_{\text {survey } 2}}{\mu_{\text {survey } 1}}-1\right)=\operatorname{sign}\left(\frac{N A_{\text {survey } 2}}{N A_{\text {reference }}}-1\right)=\operatorname{sign}\left(\frac{N A_{\text {reference }}}{N A_{\text {survey } 1}}-1\right)
-$$
-is true.
+$$ is true.
 
 Easier in code terms:
+
 ```{r}
 #| eval: false
 is_same_direction <- function(x, y) {
@@ -211,19 +209,18 @@ is_same_direction <- function(x, y) {
 # with x = c(mu_survey1, mu_survey2) and y = c(NA_survey1, NA_survey2)
 ```
 
-
 If so, we apply same direction, otherwise, diverging direction interpolation:
 
-- **Same direction** : we extrapolate means like so:
+-   **Same direction** : we extrapolate means like so:
 
 $$
 \mu_{\text {reference }}=\left(\mu_{\text {survey } 2}-\mu_{\text {survey } 1}\right) \times \frac{N A_{\text {reference }}-N A_{\text {survey } 1}}{N A_{\text {survey } 2}-N A_{\text {survey } 1}}+\mu_{\text {survey } 1}
 $$
 
-- **Diverging direction** : means are extrapolated forward by the national account growth rate using the early survey and backwards using the later survey.
-
+-   **Diverging direction** : means are extrapolated forward by the national account growth rate using the early survey and backwards using the later survey.
 
 We can access them using the function `get_aux("interpolated_means")`:
+
 ```{r}
 means_table <- get_aux("interpolated_means") |>
   select(country_code, year, welfare_time, welfare_type, survey_time, predicted_mean_ppp) |>
@@ -240,6 +237,7 @@ means_table |>
 ## Calculate interpolated values
 
 Next, we need to calculate interpolated values for poverty estimates:
+
 ```{r}
 # First we merge the interpolated means with survey estimates
 merged_data <- means_table |>
@@ -266,7 +264,6 @@ merged_data_step1 |>
   mutate(across(where(is.numeric), ~ round(., digits = 3))) |>
   DT::datatable(options = list(scrollX = TRUE))
 ```
-
 
 ```{r}
 merged_data_step2 <- merged_data_step1 |> 
@@ -418,6 +415,7 @@ joyn::is_id(country_estimates, c('country_code', 'year'))
 ```
 
 We then merge them to population and country reference tables:
+
 ```{r}
 country_estimates <- country_estimates |>
   dplyr::left_join(pop_tables, by = c("country_code", "year", "reporting_level")) |>
@@ -473,6 +471,7 @@ regional_estimates <- bind_rows(regional_poverty, global_poverty) |> rename(hc_o
 ```
 
 ## Compare with already calculated regional aggregates
+
 ```{r}
 regional_comparison <- pip_regional |>
   select(region_code, year, hc = headcount) |>
@@ -502,6 +501,7 @@ But you need to filter them accordingly.
 ## Load Data and query PIP
 
 First we load the headcount ratios for the 28 countries:
+
 ```{r}
 npl_data <- read_stata(here("02_data", "national_poverty_rates_lic.dta"))
 ```
@@ -577,170 +577,10 @@ ggplot(harmonized_npl_unnested,
   )
 ```
 
-# Exercise 1: Kuznets Curve
 
-Here are some more interactive exercises which use PIP data. First, we are going to explore the Kuznets curve hypothesis. The Kuznets curve hypothesis posits that inequality first increases and then decreases as a country develops. The hypothesis is often represented by an **inverted U-shaped curve**.
+# Visualization Exercise: SPL vs IPL.
 
-To do so, we(you) need to:
-
-1.  Plot the relationship between an inequality metric and log mean welfare.
-
-2.  Test the relationship by regressing an inequality metric on a 2nd order polynomial of log mean welfare.
-
-## Scatterplot
-
-Unfold the code to reveal the answer:
-
-```{r}
-#| code-fold: true
-#| message: false
-#| warning: false
-
-# Load PIP data
-pip_data <- get_stats()
-  # filter(welfare_type == "consumption", reporting_level == "national") Does it hold for different types of data?
-
-# Plot 
-scatterplot <- ggplot(pip_data, aes(x = log(mean), y = gini)) +
-  geom_point(color = "darkblue", alpha = 0.6) +  
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = TRUE, color = "red", fill = "pink", alpha = 0.3) +
-  labs(
-    title = "Exploring the Kuznets Curve Hypothesis",
-    subtitle = "Relationship between inequality (Gini) and log welfare",
-    x = "Log of Mean Welfare",
-    y = "Gini Coefficient"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.title = element_text(face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5)
-  )
-
-scatterplot
-```
-
-## Regression Check
-
-Unfold the code to see the answer:
-
-```{r}
-#| code-fold: true
-# Regression check
-model <- lm(gini ~ log(mean)^2 + I(log(mean)^2), data = pip_data)
-summary(model)
-```
-
-## Conclusion
-
-1.  **Scatterplot:**
-    -   Plots the Gini coefficient (inequality) against the log of mean welfare.
-    -   Includes a **trendline** modeled using a quadratic regression to check for the inverted U-shape.
-2.  **Regression Analysis:**
-    -   Regresses **Gini** on a 2nd-order polynomial of **log(mean)**: \$$Gini = \beta_0 + \beta_1 \cdot \log(mean) + \beta_2 \cdot \log(mean)^2 + \epsilon$\$
-    -   The **summary** output will show:
-        -   Whether the quadratic term ($\beta_2$) is significant.
-        -   If ($\beta_2 < 0$), it supports the Kuznets hypothesis (inverted U-shape).
-3.  However: when filtering to consumption/income data only, things are more complex.
-
-```{r}
-#| code-fold: true
-scatterplot + facet_wrap(~welfare_type)
-```
-
-# Exercise 2: COVID-19 Impact on poverty and inequality
-
-For this exercise you will need to:
-
-1.  Calculate and plot the change in millions of extreme poor by region from 2019 to 2020.
-
-2.  Calculate and plot the changes in Gini observed from 2019 to 2020 for countries with comparable data during these two years.
-
-## Change in Millions of Extreme Poor
-
-First, load, the data at the regional level (`get_wb()`) and generate the metric needed (change in poverty, in millions). Unfold the code to see the answer:
-
-```{r}
-#| code-fold: true
-#| echo: false
-# Load World Bank data for 2019 and 2020
-wb_data <- get_wb() |> 
-  filter(year == 2019 | year == 2020) |> # Select data for 2019 and 2020
-  group_by(region_code) |> # Group by region
-  arrange(region_code, year) |> # Ensure data is sorted by region and year
-  mutate(changeinpoor = pop_in_poverty - lag(pop_in_poverty)) |> # Calculate change
-  filter(!is.na(changeinpoor)) # Remove rows without change data
-```
-
-Next, plot the data. Again, unfold the code to see the answer:
-
-```{r}
-#| code-fold: true
-#| fig-height: 6
-# Plot change in number of poor (in millions) by region
-poverty_plot <- ggplot(wb_data, aes(x = region_name, y = changeinpoor / 10^6, fill = region_name)) +
-  geom_bar(stat = "identity") +
-  labs(
-    title = "Change in Extreme Poverty (2019–2020)",
-    subtitle = "Change in the number of extreme poor (millions) by region",
-    x = "Region",
-    y = "Change in Millions"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.title = element_text(face = "bold", hjust = 0.5),
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    legend.position = "none"
-  )
-
-poverty_plot
-```
-
-## Change in Gini Coefficient
-
-First, download the data at the country level `get_stats()` and generate the needed metrics (change in Gini). Unfold the code to see the answer:
-
-```{r}
-#| code-fold: true
-#| message: false
-#| warning: false
-
-# Load data for Gini index
-df_gini <- get_stats() |> 
-  filter((year == 2019 | year == 2020) & reporting_level == "national") |> # Select years and national data
-  group_by(country_code, welfare_type, comparable_spell) |> # Group by country and welfare type
-  filter(n() == 2) |> # Keep only countries with data in both years
-  arrange(country_code, year) |> # Ensure sorted order
-  mutate(ginichange = gini - lag(gini)) |> # Calculate change in Gini
-  filter(year == 2020) # Keep only 2020 data for plotting
-```
-
-Next, plot the data. Unfold the code to see the answer:
-
-```{r}
-#| code-fold: true
-#| fig-height: 10
-# Plot change in Gini index by country
-gini_plot <- ggplot(df_gini, aes(x = reorder(country_name, + ginichange), y = ginichange * 100, fill = region_name)) +
-  geom_bar(stat = "identity") +
-  labs(
-    title = "Change in Gini Index (2019–2020)",
-    subtitle = "Change in inequality (Gini points) for countries with comparable data",
-    x = "Country",
-    y = "Change in Gini Points"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.title = element_text(face = "bold", hjust = 0.5),
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-  )
-
-gini_plot
-```
-
-
-# Exercise 3: SPL vs PL
-
-Plot the different trends in headcount ratios when calculated based on the IPL vs the SPL for Italy (or another country of your choice). Hint: `get_stats()` will give you the data you need (`spl` variable).
+Plot the different trends in poverty headcount ratios when calculated based on the IPL vs the SPL for Italy (or another country of your choice) using all available years. Hint: `get_stats()` will give you the data you need (the variable `spl` reports the societal poverty line at default 2017 PPPs). Another hint: you need to use a loop or vectorization!
 
 ```{r}
 #| code-fold: true
@@ -775,4 +615,3 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom")
 ```
-
