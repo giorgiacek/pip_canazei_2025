@@ -11,7 +11,7 @@ set more off
 * 1. Introduction
 // See R Quarto Document or Slides for lecture notes.
 // Most (almost all) visualizations are also done in R. Sorry!
-// The final exercises are only in R.
+// The final exercise are only in R.
 
 * 2. Replicate PIP Data for Nigeria (Survey Years)
 
@@ -40,8 +40,8 @@ isid country_code year
 tempfile hc_pip 
 save `hc_pip'
 
-// Obtain data on percentiles
-use "data/world_100bin.dta", clear
+// Obtain data on percentiles (change to right directory)
+use "world_100bin.dta", clear 
 keep if country_code=="NGA" 
 tab year
 br 
@@ -90,8 +90,8 @@ keep if country_code=="NGA"
 tempfile ppp 
 save `ppp'
 
-// Obtain survey data 
-use "data/NGA2018.dta", clear
+// Obtain survey data (you do not have access to this file! See Quarto doc for details)
+use "NGA2018.dta", clear
 tab year
 
 // Combine data 
@@ -326,12 +326,12 @@ drop d_hc
 /* Goal: Illustrate the use of the [popshare] option in the pip command */
 
 // Create empty data set to save harmonized national poverty lines
-capture erase "data/harmonized_npl.dta"
+capture erase "harmonized_npl.dta"
 drop _all
-save "data/harmonized_npl.dta", empty
+save "harmonized_npl.dta", empty
 
-// Load compiled national poverty rates for low-income countries
-use "data/national_poverty_rates_lic.dta", clear
+// Load compiled national poverty rates for low-income countries (change to correct directory)
+use "national_poverty_rates_lic.dta", clear
 browse 
 qui count
 local totalobs = `r(N)'
@@ -358,11 +358,11 @@ lab var harm_npl "Harmonized national poverty line"
 sleep 500
 append using "data/harmonized_npl.dta"
 sleep 500
-save "data/harmonized_npl.dta", replace
+save "harmonized_npl.dta", replace
 }
 
 // Obtain the median value of harmonized national poverty line
-use "data/harmonized_npl.dta", clear
+use "harmonized_npl.dta", clear
 egen ipl = median(harm_npl)
 tab ipl 
 lab var ipl "International poverty line (2017 PPP dollars)"
